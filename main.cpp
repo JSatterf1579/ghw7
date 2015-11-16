@@ -106,7 +106,6 @@ void meshReader(char *filename, int sign, Mesh *mesh, float transformX, float tr
     //Build
 
     float x, y, z, len;
-    int i;
     char letter;
     point v1, v2, crossP;
     int ix, iy, iz;
@@ -133,7 +132,8 @@ void meshReader(char *filename, int sign, Mesh *mesh, float transformX, float tr
         printf("Cannot open %s\n!", filename);
         exit(0);
     }
-
+    mesh->verts = 0;
+    mesh->faces = 0;
     // Count the number of vertices and faces
     while (!feof(fp)) {
         fscanf(fp, "%c %f %f %f\n", &letter, &x, &y, &z);
@@ -158,7 +158,7 @@ void meshReader(char *filename, int sign, Mesh *mesh, float transformX, float tr
     fp = fopen(filename, "r");
 
     // Read the veritces
-    for (i = 0; i < mesh->verts; i++) {
+    for (int i = 0; i < mesh->verts; i++) {
         fscanf(fp, "%c %f %f %f\n", &letter, &x, &y, &z);
         mesh->vertList[i].x = x;
         mesh->vertList[i].y = y;
@@ -168,7 +168,7 @@ void meshReader(char *filename, int sign, Mesh *mesh, float transformX, float tr
     }
 
     // Read the faces
-    for (i = 0; i < mesh->faces; i++) {
+    for (int i = 0; i < mesh->faces; i++) {
         fscanf(fp, "%c %d %d %d\n", &letter, &ix, &iy, &iz);
         mesh->faceList[i].v1 = ix - 1;
         mesh->faceList[i].v2 = iy - 1;
@@ -179,12 +179,12 @@ void meshReader(char *filename, int sign, Mesh *mesh, float transformX, float tr
 
     // The part below calculates the normals of each vertex
     normCount = (int *) malloc(sizeof(int) * mesh->verts);
-    for (i = 0; i < mesh->verts; i++) {
+    for (int i = 0; i < mesh->verts; i++) {
         mesh->normList[i].x = mesh->normList[i].y = mesh->normList[i].z = 0.0;
         normCount[i] = 0;
     }
 
-    for (i = 0; i < mesh->faces; i++) {
+    for (int i = 0; i < mesh->faces; i++) {
         v1.x = mesh->vertList[mesh->faceList[i].v2].x - mesh->vertList[mesh->faceList[i].v1].x;
         v1.y = mesh->vertList[mesh->faceList[i].v2].y - mesh->vertList[mesh->faceList[i].v1].y;
         v1.z = mesh->vertList[mesh->faceList[i].v2].z - mesh->vertList[mesh->faceList[i].v1].z;
@@ -215,7 +215,7 @@ void meshReader(char *filename, int sign, Mesh *mesh, float transformX, float tr
         normCount[mesh->faceList[i].v2]++;
         normCount[mesh->faceList[i].v3]++;
     }
-    for (i = 0; i < mesh->verts; i++) {
+    for (int i = 0; i < mesh->verts; i++) {
         mesh->normList[i].x = (float) sign * mesh->normList[i].x / (float) normCount[i];
         mesh->normList[i].y = (float) sign * mesh->normList[i].y / (float) normCount[i];
         mesh->normList[i].z = (float) sign * mesh->normList[i].z / (float) normCount[i];
@@ -225,7 +225,7 @@ void meshReader(char *filename, int sign, Mesh *mesh, float transformX, float tr
 }
 
 void sceneReader(char *filename) {
-    std::ifstream file("./redsphere.rtl");
+    std::ifstream file(filename);
     std::string str;
     std::getline(file, str);
     stringstream ss(str);
@@ -248,7 +248,7 @@ void sceneReader(char *filename) {
 
         if (lineType == 'L' && seenLights < numLights) {
 
-            //Process the rest of the line as if it is the light definition
+            //Process the rest of the line as if it is a light definition
             Light *l = (Light *) malloc(sizeof(struct Light));
             ss >> l->light_type;
             ss >> l->x;
@@ -263,6 +263,7 @@ void sceneReader(char *filename) {
             cout << "We found a " << type << " Light at position (" << l->x << ", " << l->y << ", " << l->z <<
             ") with color (" << l->r << ", " << l->g << ", " << l->b << ").\n";
         } else if (lineType == 'S' && seenSpheres < numSpheres) {
+            //Process the rest of the line as if it is a sphere definition
             Sphere *s = (Sphere *) malloc(sizeof(struct Sphere));
             Material *mat = (Material *) malloc(sizeof(struct Material));
             s->material = mat;
@@ -304,12 +305,50 @@ void sceneReader(char *filename) {
             mat->k_d << " " << mat->k_s << "\n\t Specular Exponent: " << mat->s_exp << " Index Refraction " <<
             mat->ref_index << " Constant Reflection: " << mat->k_relect << " Constant Refraction " << mat->k_refract;
             //Process the rest of the line as if it is the light definition
-        } else if (lineType == 'M') {
+        } else if (lineType == 'M' && seenMeshes < numMeshes) {
+            //Process the rest of the line as if it is a mesh definition
+            string meshName;
+            ss >> meshName;
+            float scale, rotX, rotY, rotZ, x, y, z;
+
+            Mesh * mesh = (Mesh *)malloc(sizeof(struct Mesh));
+            Material *mat = (Material *) malloc(sizeof(struct Material));
+            mesh->material = mat;
+
+            ss >> scale;
+            ss >> rotX;
+            ss >> rotY;
+            ss >> rotZ;
+            ss >> x;
+            ss >> y;
+            ss >> z;
+
+            cout << "Attempting to read in mesh: " << meshName << "\n";
+            char * temp = strdup(meshName.c_str());
+            meshReader(temp,1,mesh,x,y,z,rotX,rotY,rotZ,scale);
+            ss >> mat->ar;
+            ss >> mat->ag;
+            ss >> mat->ab;
+
+            ss >> mat->dr;
+            ss >> mat->dg;
+            ss >> mat->db;
+
+            ss >> mat->sr;
+            ss >> mat->sg;
+            ss >> mat->sb;
+
+            ss >> mat->k_a;
+            ss >> mat->k_d;
+            ss >> mat->k_s;
+
+            ss >> mat->s_exp;
+            ss >> mat->ref_index;
+            ss >> mat->k_relect;
+            ss >> mat->k_refract;
+            meshes[seenMeshes] = *mesh;
             seenMeshes++;
-            //Process the rest of the line as if it is the light definition
         }
-
-
     }
     return;
 }
@@ -480,7 +519,7 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    sceneReader("./redsphere.rtl");
+    sceneReader("./red_sphere_and_teapot.rtl");
 
     // Switch to main loop
 //	glutMainLoop();
