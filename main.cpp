@@ -579,6 +579,11 @@ point cross(point p, point p2)
 
 }
 
+float distance(point p, point p2)
+{
+	return magnitude(subtract(p, p2));
+}
+
 point* raySphereIntercept(Ray *r, Sphere *s)
 {
 	point *ret = nullptr;
@@ -667,4 +672,24 @@ point* rayTriIntersection(Ray *r, point *v1, point *v2, point  *v3)
 
 	return ret;
 
+}
+
+point* rayMeshIntersection(Ray *r, Mesh *m)
+{
+	point *res = nullptr;
+	int i;
+	for (i = 0; i < m->faces; i++)
+	{
+		faceStruct face = m->faceList[i];
+		point *faceIntersect = rayTriIntersection(r, &m->vertList[face.v1], &m->vertList[face.v2], &m->vertList[face.v3]);
+		if (faceIntersect != nullptr && (res == nullptr || distance(r->origin, *faceIntersect) < distance(r->origin, *res)))
+		{
+			if (res != nullptr)
+			{
+				free(res);
+			}
+			res = faceIntersect;
+		}
+	}
+	return res;
 }
