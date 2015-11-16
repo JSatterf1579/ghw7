@@ -26,6 +26,8 @@ const int INITIAL_RES = 400;
 float * modelWorldMatrix;
 FrameBuffer* fb;
 
+
+
 class point
 {
 public:
@@ -64,6 +66,20 @@ typedef struct Sphere {
   float x,y,z;
   float ar, ag, ab, dr, dg, db, sr, sg, sb, k_a, k_d, s_exp, ref_index, k_relect, k_refract;
 };
+
+typedef struct Ray {
+	point origin, direction;
+};
+
+
+point* raySphereIntercept(Ray *r, Sphere *s);
+void translateModelMatrix(float x, float y, float z);
+void rotateModelMatrixX(float angle);
+void rotateModelMatrixY(float angle);
+void rotateModelMatrixZ(float angle);
+void scaleModelMatrix(float scaleFactor);
+point Transform(float* matrix, point p);
+
 
 // The mesh reader itself
 // It can read *very* simple obj files
@@ -450,5 +466,79 @@ point Transform(float* matrix, point p)
 	temp.z = matrix[2] * p.x + matrix[6] * p.y + matrix[10] * p.z + matrix[14] * p.w;
 	temp.w = matrix[3] * p.x + matrix[7] * p.y + matrix[11] * p.z + matrix[15] * p.w;
 	return temp;
+
+}
+
+
+float Dot(point& v, point& vx)
+{
+	return (v.x * vx.x) + (v.y * vx.y) + (v.z * vx.z);
+}
+
+float magnitude(point p) {
+	return sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
+}
+
+point multiply(point p, float m)
+{
+	point temp;
+	temp.x = p.x * m;
+	temp.y = p.y * m;
+	temp.z = p.z * m;
+	return temp;
+}
+
+point subtract(point p, point p2)
+{
+	point temp;
+	temp.x = p.x - p2.x;
+	temp.y = p.y - p2.y;
+	temp.z = p.z - p2.z;
+	temp.w = 0;
+	return temp;
+}
+
+point* raySphereIntercept(Ray *r, Sphere *s)
+{
+	point *ret = nullptr;
+	point *dP = (point *)malloc(sizeof(point));
+	dP->x = s->x - r->origin.x;
+	dP->y = s->y - r->origin.y;
+	dP->z = s->z - r->origin.z;
+	dP->w = 0;
+
+	float dotUdP = Dot(r->direction, *dP);
+	point directionProject = multiply(r->direction, dotUdP);
+	point diffdPDirectionProjection = subtract(*dP, directionProject);
+	float mag = magnitude(diffdPDirectionProjection);
+	float magsq = mag * mag;
+
+	float discriminant = (s->radius * s->radius) - magsq;
+
+	if (discriminant >= 0)
+	{
+		float sPos = Dot(r->direction, *dP) + sqrt(discriminant);
+		float sNeg = Dot(r->direction, *dP) - sqrt(discriminant);
+		float s;
+		if (sPos < sNeg)
+		{
+			s = sPos;
+		}
+		else
+		{
+			s = sNeg;
+		}
+		ret = (point *)malloc(sizeof(point));
+		ret->x = r->origin.x + s * r->direction.x;
+		ret->y = r->origin.y + s * r->direction.y;
+		ret->z = r->origin.z + s * r->direction.z;
+		ret->w = 1;
+
+	}
+
+	return ret;
+
+
+
 
 }
