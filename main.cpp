@@ -13,6 +13,7 @@
 
 #define ON 1
 #define OFF 0
+#define EPSILON 0.000001
 #define M_PI 3.14159265358979323846
 
 using namespace std;
@@ -79,6 +80,7 @@ void rotateModelMatrixY(float angle);
 void rotateModelMatrixZ(float angle);
 void scaleModelMatrix(float scaleFactor);
 point Transform(float* matrix, point p);
+point* rayTriIntersection(Ray *r, point *v1, point *v2, point  *v3);
 
 
 // The mesh reader itself
@@ -498,6 +500,17 @@ point subtract(point p, point p2)
 	return temp;
 }
 
+point cross(point p, point p2)
+{
+	point temp;
+	temp.x = p.y * p2.z - p.z * p2.y;
+	temp.y = p.z * p2.x - p.x * p2.z;
+	temp.z = p.x * p2.y - p.y * p2.x;
+	temp.w = 0;
+	return temp;
+
+}
+
 point* raySphereIntercept(Ray *r, Sphere *s)
 {
 	point *ret = nullptr;
@@ -537,8 +550,53 @@ point* raySphereIntercept(Ray *r, Sphere *s)
 	}
 
 	return ret;
+}
 
 
+point* rayTriIntersection(Ray *r, point *v1, point *v2, point  *v3)
+{
+	point e1, e2;
+	point P, Q, T;
+	float det, invDet, u, v;
+	float t;
+	point *ret = nullptr;
 
+	e1 = subtract(*v2, *v3);
+	e2 = subtract(*v3, *v1);
+	P = cross(r->direction, e2);
+	det = Dot(e1, P);
+	if (det > -EPSILON && det < EPSILON)
+	{
+		return ret;
+	}
+	invDet = 1.f / det;
+	T = subtract(r->origin, *v1);
+	u = Dot(T, P) * invDet;
+	
+	if (u < 0.f || u > 1.f)
+	{
+		return ret;
+	}
+
+	Q = cross(T, e1);
+	v = Dot(r->direction, Q) * invDet;
+
+	if (v < 0.f || v > 1.f)
+	{
+		return ret;
+	}
+
+	t = Dot(e2, Q) * invDet;
+
+	if (t > EPSILON)
+	{
+		ret = (point *)malloc(sizeof(point));
+		ret->x = r->origin.x + r->direction.x * t;
+		ret->y = r->origin.y + r->direction.y * t;
+		ret->z = r->origin.z + r->direction.z * t;
+		ret->w = 0;
+	}
+
+	return ret;
 
 }
