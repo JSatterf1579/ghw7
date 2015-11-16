@@ -99,6 +99,7 @@ void rotateModelMatrixZ(float angle);
 void scaleModelMatrix(float scaleFactor);
 point Transform(float* matrix, point p);
 point* rayTriIntersection(Ray *r, point *v1, point *v2, point  *v3);
+point* localIllumination(point * p, point * normal, Material * mat);
 
 // The mesh reader itself
 // It can read *very* simple obj files
@@ -667,4 +668,8 @@ point* rayTriIntersection(Ray *r, point *v1, point *v2, point  *v3)
 
 	return ret;
 
+}
+
+point* localIllumination(point * p, point * normal, Material * mat){
+    
 }
