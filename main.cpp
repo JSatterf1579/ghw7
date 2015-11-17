@@ -676,7 +676,7 @@ point* rayTriIntersection(Ray *r, point *v1, point *v2, point  *v3)
 }
 
 
-point* rayMeshIntersection(Ray *r, Mesh *m)
+point* rayMeshIntersection(Ray *r, Mesh *m, int *triOut)
 {
 	point *res = nullptr;
 	int i;
@@ -691,11 +691,114 @@ point* rayMeshIntersection(Ray *r, Mesh *m)
 				free(res);
 			}
 			res = faceIntersect;
+			*triOut = i;
+		}
+		else
+		{
+			if (faceIntersect != nullptr)
+			{
+				free(faceIntersect);
+			}
 		}
 	}
 	return res;
 }
 
+
+point* rayTrace(Ray *r, int depth)
+{
+	//Default to black for missed ray
+	point *closestPoint = nullptr;
+	Sphere *closestSphere = nullptr;
+	Mesh *closestMesh = nullptr;
+	int *closestMeshTri = (int *)malloc(sizeof(int));
+	bool sphereCloser = false;
+
+	//Iterate through all meshes
+	int i;
+	for (i = 0; i < numMeshes; i++)
+	{
+		point *meshIntersect = rayMeshIntersection(r, &meshes[i], closestMeshTri);
+		if (meshIntersect != nullptr && (closestPoint != nullptr || distance(r->origin, *meshIntersect) < distance(r->origin, *closestPoint)))
+		{
+			if (closestPoint != nullptr)
+			{
+				free(closestPoint);
+			}
+			closestPoint = meshIntersect;
+			closestMesh = &meshes[i];
+		}
+		else
+		{
+			if (meshIntersect != nullptr)
+			{
+				free(meshIntersect);
+			}
+		}
+	}
+
+	//Iterate through all spheres
+	for (i = 0; i < numSpheres; i++)
+	{
+		point *sphereIntersect = raySphereIntercept(r, &spheres[i]);
+		if (sphereIntersect != nullptr && (closestPoint != nullptr || distance(r->origin, *sphereIntersect) < distance(r->origin, *closestPoint)))
+		{
+			if (closestPoint != nullptr)
+			{
+				free(closestPoint);
+			}
+			closestPoint = sphereIntersect;
+			closestSphere = &spheres[i];
+			sphereCloser = true;
+		}
+		else
+		{
+			if (sphereIntersect != nullptr)
+			{
+				free(sphereIntersect);
+			}
+		}
+	}
+
+	//Completely missed everything, return ambient lighting of scene
+	if (closestPoint == nullptr)
+	{
+		closestPoint = (point *)malloc(sizeof(point));
+		closestPoint->x = .3;
+		closestPoint->y = .3;
+		closestPoint->z = .3;
+		closestPoint->w = 0.f;
+		return closestPoint;
+	}
+
+	depth--;
+	Material *mat;
+	if (sphereCloser)
+	{
+		mat = closestSphere->material;
+	}
+	else
+	{
+		mat = closestMesh->material;
+	}
+	//If we haven't bottomed out
+	if (depth > 0)
+	{
+		//Hit a surface, raycast to next surface (reflect + refract)
+		Ray *reflectRay = (Ray *)malloc(sizeof(Ray));
+		reflectRay->origin = *closestPoint;
+
+		Ray *refractRay = (Ray *)malloc(sizeof(Ray));
+		refractRay->origin = *closestPoint;
+
+	}
+	else
+	{
+		//return localIllumination(closestPoint, )
+	}
+}
+
+point* getTriNormal(point *p, )
 
 point* localIllumination(point * p, point * normal, Material * mat){
 }
