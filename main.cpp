@@ -291,8 +291,6 @@ void sceneReader(char *filename) {
         char lineType;
         ss >> lineType;
 
-        cout << "Line Type: " << lineType << '\n';
-
         if (lineType == 'L' && seenLights < numLights) {
 
             //Process the rest of the line as if it is a light definition
@@ -571,12 +569,6 @@ void keyboard(unsigned char key, int x, int y) {
 int main(int argc, char *argv[]) {
 
     fb = new FrameBuffer(INITIAL_RES, INITIAL_RES);
-
-	
-
-//	BresenhamLine(fb, fb->GetWidth()*0.1, fb->GetHeight()*0.1, fb->GetWidth()*0.9, fb->GetHeight()*0.9, Color(1, 0, 0));
-
-
 
     // Initialize GLUT
     glutInit(&argc, argv);
@@ -902,12 +894,14 @@ void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint)
 	if (sphereCloser)
 	{
 		mat = closestSphere->material;
-		norm = &getSphereNormal(closestPoint, closestSphere);
+        point sphereNorm = getSphereNormal(closestPoint, closestSphere);
+		norm = &sphereNorm;
 	}
 	else
 	{
 		mat = closestMesh->material;
-		norm = &getTriNormal(closestPoint, closestMesh, *closestMeshTri);
+        point meshNorm = getTriNormal(closestPoint, closestMesh, *closestMeshTri);
+		norm = &meshNorm;
 	}
 }
 
@@ -923,7 +917,7 @@ Color rayTrace(Ray *r, int depth)
 	//Completely missed everything, return ambient lighting of scene
 	if (closestPoint == nullptr)
 	{
-		Color ret = Color(0.f, 0.f, 0.f);
+		Color ret = Color(0.3, 0.3, 0.3);
 		return ret;
 	}
 	Color c = *localIllumination(*closestPoint, *norm, r->origin, *mat);
@@ -1036,11 +1030,12 @@ Color *localIllumination(point p, point norm, point view, Material mat) {
         diffuseLight = diffuseLight.Clamp(0.0, 1.0);
 
         //Compute specular light
-        Color specularLight = specularLight * materialSpecular * mat.k_s * pow(max(Dot(normal, H), 0.0), mat.s_exp);
+        Color specularLight = materialSpecular * mat.k_s * pow(max(Dot(normal, H), 0.0), mat.s_exp);
         specularLight = specularLight.Clamp(0.0, 1.0);
         totalIllumination->r += specularLight.r + diffuseLight.r;
         totalIllumination->g += specularLight.g + diffuseLight.g;
         totalIllumination->b += specularLight.b + diffuseLight.b;
     }
+    cout << "Total Illumination Color: " << totalIllumination->r << ", " << totalIllumination->g << ", " << totalIllumination->b << "\n";
     return totalIllumination;
 }
