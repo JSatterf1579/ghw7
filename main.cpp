@@ -23,6 +23,8 @@ using namespace std;
 // Global variables
 int window_width, window_height;    // Window dimensions
 int numSpheres, numMeshes, numLights;
+float imagePlaneDistance = 8.f;
+float imageplaneHalfSide = 5.f;
 
 const int INITIAL_RES = 400;
 
@@ -114,6 +116,10 @@ point *rayTriIntersection(Ray *r, point *v1, point *v2, point *v3);
 Color *localIllumination(point *p, point *normal, point *view, Material *mat);
 
 float triArea(point v1, point v2, point v3);
+
+point getTriNormal(point *p, Mesh *m, int i);
+
+point getSphereNormal(point *p, Sphere *s);
 
 // The mesh reader itself
 // It can read *very* simple obj files
@@ -452,6 +458,28 @@ void display(void) {
 
     glEnd();
     glutSwapBuffers();
+}
+
+void render()
+{
+	point origin = point(0, 0, 0);
+	for (float y = 0; y < fb->GetHeight(); y ++)
+	{
+		for (float x = 0; y < fb->GetWidth; x++)
+		{
+			float ypx = (y / (fb->GetHeight() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
+			float xpx = (x / (fb->GetWidth() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
+
+			Ray *r = (Ray *)malloc(sizeof(Ray));
+			
+			r->origin = origin;
+			point pxPoint = normalizeN(new point(x, y, -imagePlaneDistance));
+			r->direction = pxPoint;
+
+			Color c = rayTrace(r, 3);
+			fb->SetPixel(x, y, c);
+		}
+	}
 }
 
 
@@ -888,7 +916,7 @@ Color rayTrace(Ray *r, int depth)
 		mat = closestMesh->material;
 		norm = &getTriNormal(closestPoint, closestMesh, *closestMeshTri);
 	}
-	Color c = localIllumination(closestPoint, norm, &r->origin, mat);
+	Color c = *localIllumination(closestPoint, norm, &r->origin, mat);
 
 	//If we haven't bottomed out
 	if (depth > 0)
