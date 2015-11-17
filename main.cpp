@@ -134,6 +134,9 @@ point getTriNormal(point *p, Mesh *m, int i);
 
 point getSphereNormal(point *p, Sphere *s);
 
+point normalize(point pt);
+
+
 // The mesh reader itself
 // It can read *very* simple obj files
 void meshReader(char *filename, int sign, Mesh *mesh, float transformX, float transformY, float transformZ, float rotX,
@@ -478,7 +481,7 @@ void render()
 	point origin = point(0, 0, 0);
 	for (float y = 0; y < fb->GetHeight(); y ++)
 	{
-		for (float x = 0; y < fb->GetWidth; x++)
+		for (float x = 0; y < fb->GetWidth(); x++)
 		{
 			float ypx = (y / (fb->GetHeight() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
 			float xpx = (x / (fb->GetWidth() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
@@ -486,7 +489,7 @@ void render()
 			Ray *r = (Ray *)malloc(sizeof(Ray));
 			
 			r->origin = origin;
-			point pxPoint = normalizeN(new point(x, y, -imagePlaneDistance));
+			point pxPoint = normalize(point(x, y, -imagePlaneDistance));
 			r->direction = pxPoint;
 
 			Color c = rayTrace(r, 3);
@@ -817,7 +820,7 @@ point* rayMeshIntersection(Ray *r, Mesh *m, int *triOut)
 
 Color rayTrace(Ray *r, int depth)
 {
-	//Default to black for missed ray
+
 	point *closestPoint = nullptr;
 	Sphere *closestSphere = nullptr;
 	Mesh *closestMesh = nullptr;
@@ -901,7 +904,7 @@ Color rayTrace(Ray *r, int depth)
 		{
 			Ray *reflectRay = (Ray *)malloc(sizeof(Ray));
 			reflectRay->origin = *closestPoint;
-			reflectRay->direction = *reflect(closestPoint, &r->direction);
+			reflectRay->direction = reflect(*closestPoint, r->direction);
 			Color reflected = rayTrace(reflectRay, depth);
 			c = c + reflected;
 		}
@@ -911,7 +914,7 @@ Color rayTrace(Ray *r, int depth)
 			point *refractReulst = nullptr;
 			Ray *refractRay = (Ray *)malloc(sizeof(Ray));
 			refractRay->origin = *closestPoint;
-			refractRay->direction = *refract(closestPoint, &r->direction, mat->ref_index);
+			refractRay->direction = refract(*closestPoint, r->direction, mat->ref_index);
 			Color refracted = rayTrace(refractRay, depth);
 			c = c + refracted;
 		}
