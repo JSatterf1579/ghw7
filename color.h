@@ -31,6 +31,25 @@ public:
 	{
 		return Color(c.r - r, c.g - g, c.b - b);
 	}
+	Color Clamp(double min, double max){
+		Color temp = Color(r,g,b);
+		if(temp.r > max){
+			temp.r = max;
+		} else if (temp.r < min){
+			temp.r = min;
+		}
+		if(temp.g > max){
+			temp.g = max;
+		} else if (temp.g < min){
+			temp.g = min;
+		}
+		if(temp.b > max){
+			temp.b = max;
+		} else if (temp.b < min){
+			temp.b = min;
+		}
+		return temp;
+	}
 };
 
 #endif
