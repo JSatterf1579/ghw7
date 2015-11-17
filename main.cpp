@@ -138,6 +138,10 @@ point normalize(point pt);
 
 Color rayTrace(Ray *r, int depth);
 
+void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint);
+
+point subtract(point p, point p2);
+
 
 // The mesh reader itself
 // It can read *very* simple obj files
@@ -489,14 +493,18 @@ void render()
 	{
 		for (int x = 0; x < fb->GetWidth(); x++)
 		{
-			//printf("Rendering pixel (%d, %d)\n", x, y);
+			Material *mat;
+			point *norm;
+			point *closestPoint = nullptr;
+
+			printf("Rendering pixel (%d, %d)\n", x, y);
 			float ypx = (y / (fb->GetHeight() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
 			float xpx = (x / (fb->GetWidth() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
 
 			Ray *r = (Ray *)malloc(sizeof(Ray));
 			
 			r->origin = origin;
-			point pxPoint = normalize(point(x, y, -imagePlaneDistance));
+			point pxPoint = normalize(subtract(point(xpx, ypx, -imagePlaneDistance), origin));
 			r->direction = pxPoint;
 
 			Color c = rayTrace(r, 3);
@@ -543,10 +551,12 @@ void keyboard(unsigned char key, int x, int y) {
             break;
         case '-':
             fb->Resize(fb->GetHeight() / 2, fb->GetWidth() / 2);
+			render();
 //		BresenhamLine(fb, fb->GetWidth()*0.1, fb->GetHeight()*0.1, fb->GetWidth()*0.9, fb->GetHeight()*0.9, Color(1, 0, 0));
             break;
         case '=':
             fb->Resize(fb->GetHeight() * 2, fb->GetWidth() * 2);
+			render();
 //		BresenhamLine(fb, fb->GetWidth()*0.1, fb->GetHeight()*0.1, fb->GetWidth()*0.9, fb->GetHeight()*0.9, Color(1, 0, 0));
             break;
         default:
@@ -589,7 +599,7 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    sceneReader("./redsphere.rtl");
+    sceneReader("./red_sphere_and_teapot.rtl");
 	render();
 
     // Switch to main loop
