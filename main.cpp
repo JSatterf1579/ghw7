@@ -113,6 +113,8 @@ point *rayTriIntersection(Ray *r, point *v1, point *v2, point *v3);
 
 point *localIllumination(point *p, point *normal, point *view, Material *mat);
 
+float triArea(point v1, point v2, point v3);
+
 // The mesh reader itself
 // It can read *very* simple obj files
 void meshReader(char *filename, int sign, Mesh *mesh, float transformX, float transformY, float transformZ, float rotX,
@@ -690,6 +692,17 @@ point *normalize(point *pt) {
     return pt;
 }
 
+point normalizeN(point *pt)
+{
+	float length = sqrt(pow(pt->x, 2) + pow(pt->y, 2) + pow(pt->z, 2));
+	point norm;
+	norm.x = pt->x / length;
+	norm.y = pt->y / length;
+	norm.z = pt->z / length;
+	norm.w = 0;
+	return norm;
+}
+
 
 point add(point p, point p2)
 {
@@ -697,16 +710,6 @@ point add(point p, point p2)
 	temp.x = p.x + p2.x;
 	temp.y = p.y + p2.y;
 	temp.z = p.z + p2.z;
-	temp.w = 0;
-	return temp;
-}
-
-point cross(point p, point p2)
-{
-	point temp;
-	temp.x = p.y * p2.z - p.z * p2.y;
-	temp.y = p.z * p2.x - p.x * p2.z;
-	temp.z = p.x * p2.y - p.y * p2.x;
 	temp.w = 0;
 	return temp;
 }
@@ -722,51 +725,15 @@ point *reflect(point *incident, point *normal) {
     return sub(incident, scale(normal, 2.0 * Dot(*normal, *incident)));
 }
 
+point reflectN(point incident, point normal)
+{
+	return subtract(incident, multiply(normal, 2.f*Dot(normal, incident)));
+}
+
 
 float distance(point p, point p2)
 {
 	return magnitude(subtract(p, p2));
-}
-
-point* raySphereIntercept(Ray *r, Sphere *s)
-{
-	point *ret = nullptr;
-	point *dP = (point *)malloc(sizeof(point));
-	dP->x = s->x - r->origin.x;
-	dP->y = s->y - r->origin.y;
-	dP->z = s->z - r->origin.z;
-	dP->w = 0;
-
-	float dotUdP = Dot(r->direction, *dP);
-	point directionProject = multiply(r->direction, dotUdP);
-	point diffdPDirectionProjection = subtract(*dP, directionProject);
-	float mag = magnitude(diffdPDirectionProjection);
-	float magsq = mag * mag;
-
-	float discriminant = (s->radius * s->radius) - magsq;
-
-	if (discriminant >= 0)
-	{
-		float sPos = Dot(r->direction, *dP) + sqrt(discriminant);
-		float sNeg = Dot(r->direction, *dP) - sqrt(discriminant);
-		float s;
-		if (sPos < sNeg)
-		{
-			s = sPos;
-		}
-		else
-		{
-			s = sNeg;
-		}
-		ret = (point *)malloc(sizeof(point));
-		ret->x = r->origin.x + s * r->direction.x;
-		ret->y = r->origin.y + s * r->direction.y;
-		ret->z = r->origin.z + s * r->direction.z;
-		ret->w = 1;
-
-	}
-
-	return ret;
 }
 
 point *scale(point *p, point *scaleVals) {
