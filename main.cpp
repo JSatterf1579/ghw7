@@ -941,7 +941,7 @@ Color rayTrace(Ray *r, int depth)
 			reflectRay->origin = *closestPoint;
 			reflectRay->direction = reflect(*closestPoint, r->direction);
 			Color reflected = rayTrace(reflectRay, depth);
-			c = c + reflected;
+			c = c + reflected * mat->k_relect;
 		}
 
 		if (mat->k_refract > 0.f)
@@ -950,7 +950,7 @@ Color rayTrace(Ray *r, int depth)
 			refractRay->origin = *closestPoint;
 			refractRay->direction = refract(*closestPoint, r->direction, mat->ref_index);
 			Color refracted = rayTrace(refractRay, depth);
-			c = c + refracted;
+			c = c + refracted * mat->k_refract;
 		}
 	}
 
