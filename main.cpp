@@ -725,9 +725,23 @@ point *reflect(point *incident, point *normal) {
     return sub(incident, scale(normal, 2.0 * Dot(*normal, *incident)));
 }
 
-point reflectN(point incident, point normal)
-{
-	return subtract(incident, multiply(normal, 2.f*Dot(normal, incident)));
+
+
+point *refract(point *incident, point *normal, float index) {
+	point * tempN = normalize(normal->copy());
+	point * tempI = normalize(incident->copy());
+	float  dotProd = Dot(*tempN, *tempI);
+	float k = 1 - index * index * (1.0 - dotProd * dotProd);
+	if (k < 0.0) {
+		return new point();
+	}
+	else {
+		//R = eta * I - (eta * dot(N, I) + sqrt(k)) * N;
+		point * retVal = sub(scale(tempI, index), scale(tempN, index * Dot(*normal, *incident) + sqrt(k)));
+		retVal = retVal->copy();
+		delete tempN, tempI;
+		return  retVal;
+	}
 }
 
 
