@@ -53,6 +53,10 @@ public:
         z = za;
         w = wa;
     }
+
+    point *copy() {
+        return new point(x, y, z, w);
+    }
 };
 
 typedef struct _faceStruct {
@@ -60,46 +64,54 @@ typedef struct _faceStruct {
     int n1, n2, n3;
 } faceStruct;
 
-typedef struct Material {
+typedef struct _Material {
     float ar, ag, ab, dr, dg, db, sr, sg, sb, k_a, k_d, k_s, s_exp, ref_index, k_relect, k_refract;
-};
+} Material;
 
-typedef struct Mesh {
+typedef struct _Mesh {
     int verts, faces, norms;    // Number of vertices, faces and normals in the system
     point *vertList, *normList; // Vertex and Normal Lists
     faceStruct *faceList;        // Face List
     Material *material;
-};
+} Mesh;
 
-typedef struct Light {
+typedef struct _Light {
     int light_type;
     float x, y, z, r, g, b;
-};
+} Light;
 
-typedef struct Sphere {
+typedef struct _Sphere {
     float radius;
     float x, y, z;
     Material *material;
-};
+} Sphere;
 
 Sphere *spheres;
 Mesh *meshes;
 Light *lights;
 
-typedef struct Ray {
-	point origin, direction;
-};
+typedef struct _Ray {
+    point origin, direction;
+} Ray;
 
 
-point* raySphereIntercept(Ray *r, Sphere *s);
+point *raySphereIntercept(Ray *r, Sphere *s);
+
 void translateModelMatrix(float x, float y, float z);
+
 void rotateModelMatrixX(float angle);
+
 void rotateModelMatrixY(float angle);
+
 void rotateModelMatrixZ(float angle);
+
 void scaleModelMatrix(float scaleFactor);
-point Transform(float* matrix, point p);
-point* rayTriIntersection(Ray *r, point *v1, point *v2, point  *v3);
-point* localIllumination(point * p, point * normal, Material * mat);
+
+point Transform(float *matrix, point p);
+
+point *rayTriIntersection(Ray *r, point *v1, point *v2, point *v3);
+
+point *localIllumination(point *p, point *normal, point *view, Material *mat);
 
 // The mesh reader itself
 // It can read *very* simple obj files
@@ -251,7 +263,7 @@ void sceneReader(char *filename) {
         if (lineType == 'L' && seenLights < numLights) {
 
             //Process the rest of the line as if it is a light definition
-            Light *l = (Light *) malloc(sizeof(struct Light));
+            Light *l = (Light *) malloc(sizeof(Light));
             ss >> l->light_type;
             ss >> l->x;
             ss >> l->y;
@@ -266,8 +278,8 @@ void sceneReader(char *filename) {
             ") with color (" << l->r << ", " << l->g << ", " << l->b << ").\n";
         } else if (lineType == 'S' && seenSpheres < numSpheres) {
             //Process the rest of the line as if it is a sphere definition
-            Sphere *s = (Sphere *) malloc(sizeof(struct Sphere));
-            Material *mat = (Material *) malloc(sizeof(struct Material));
+            Sphere *s = (Sphere *) malloc(sizeof(Sphere));
+            Material *mat = (Material *) malloc(sizeof(Material));
             s->material = mat;
 
             ss >> s->x;
@@ -301,7 +313,8 @@ void sceneReader(char *filename) {
 
             cout << "We found a sphere located at (" << s->x << ", " << s->y << ", " << s->z << ") with radius " <<
             s->radius << "\n";
-            cout << "The material it uses has properties: RGB Ambient " << mat->ar << "," << mat->ag << "," << mat->ab <<
+            cout << "The material it uses has properties: RGB Ambient " << mat->ar << "," << mat->ag << "," <<
+            mat->ab <<
             " RGB Diffuse " << mat->dr << "," << mat->dg << "," << mat->db << " RGB Specular " << mat->sr << "," <<
             mat->sg << "," << mat->sb << "\n\t Contants (Ambient, Diffuse, Specular): " << mat->k_a << " " <<
             mat->k_d << " " << mat->k_s << "\n\t Specular Exponent: " << mat->s_exp << " Index Refraction " <<
@@ -313,8 +326,8 @@ void sceneReader(char *filename) {
             ss >> meshName;
             float scale, rotX, rotY, rotZ, x, y, z;
 
-            Mesh * mesh = (Mesh *)malloc(sizeof(struct Mesh));
-            Material *mat = (Material *) malloc(sizeof(struct Material));
+            Mesh *mesh = (Mesh *) malloc(sizeof(Mesh));
+            Material *mat = (Material *) malloc(sizeof(Material));
             mesh->material = mat;
 
             ss >> scale;
@@ -326,8 +339,8 @@ void sceneReader(char *filename) {
             ss >> z;
 
             cout << "Attempting to read in mesh: " << meshName << "\n";
-            char * temp = strdup(meshName.c_str());
-            meshReader(temp,1,mesh,x,y,z,rotX,rotY,rotZ,scale);
+            char *temp = strdup(meshName.c_str());
+            meshReader(temp, 1, mesh, x, y, z, rotX, rotY, rotZ, scale);
             ss >> mat->ar;
             ss >> mat->ag;
             ss >> mat->ab;
@@ -524,7 +537,7 @@ int main(int argc, char *argv[]) {
     sceneReader("./red_sphere_and_teapot.rtl");
 
     // Switch to main loop
-//	glutMainLoop();
+	glutMainLoop();
     return 0;
 }
 
@@ -536,38 +549,147 @@ point Transform(float *matrix, point p) {
     temp.y = matrix[1] * p.x + matrix[5] * p.y + matrix[9] * p.z + matrix[13] * p.w;
     temp.z = matrix[2] * p.x + matrix[6] * p.y + matrix[10] * p.z + matrix[14] * p.w;
     temp.w = matrix[3] * p.x + matrix[7] * p.y + matrix[11] * p.z + matrix[15] * p.w;
+    temp.x = temp.x / temp.w;
+    temp.y = temp.y / temp.w;
+    temp.z = temp.z / temp.w;
+    temp.w = 1.0;
     return temp;
 
 }
 
 
-float Dot(point& v, point& vx)
-{
-	return (v.x * vx.x) + (v.y * vx.y) + (v.z * vx.z);
+float Dot(point &v, point &vx) {
+    return (v.x * vx.x) + (v.y * vx.y) + (v.z * vx.z);
 }
 
 float magnitude(point p) {
-	return sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
+    return sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
 }
 
-point multiply(point p, float m)
-{
-	point temp;
-	temp.x = p.x * m;
-	temp.y = p.y * m;
-	temp.z = p.z * m;
-	return temp;
+point multiply(point p, float m) {
+    point temp;
+    temp.x = p.x * m;
+    temp.y = p.y * m;
+    temp.z = p.z * m;
+    return temp;
 }
 
-point subtract(point p, point p2)
-{
-	point temp;
-	temp.x = p.x - p2.x;
-	temp.y = p.y - p2.y;
-	temp.z = p.z - p2.z;
-	temp.w = 0;
-	return temp;
+point subtract(point p, point p2) {
+    point temp;
+    temp.x = p.x - p2.x;
+    temp.y = p.y - p2.y;
+    temp.z = p.z - p2.z;
+    temp.w = 0;
+    return temp;
 }
+
+point cross(point p, point p2) {
+    point temp;
+    temp.x = p.y * p2.z - p.z * p2.y;
+    temp.y = p.z * p2.x - p.x * p2.z;
+    temp.z = p.x * p2.y - p.y * p2.x;
+    temp.w = 0;
+    return temp;
+
+}
+
+point *raySphereIntercept(Ray *r, Sphere *s) {
+    point *ret = nullptr;
+    point *dP = (point *) malloc(sizeof(point));
+    dP->x = s->x - r->origin.x;
+    dP->y = s->y - r->origin.y;
+    dP->z = s->z - r->origin.z;
+    dP->w = 0;
+
+    float dotUdP = Dot(r->direction, *dP);
+    point directionProject = multiply(r->direction, dotUdP);
+    point diffdPDirectionProjection = subtract(*dP, directionProject);
+    float mag = magnitude(diffdPDirectionProjection);
+    float magsq = mag * mag;
+
+    float discriminant = (s->radius * s->radius) - magsq;
+
+    if (discriminant >= 0) {
+        float sPos = Dot(r->direction, *dP) + sqrt(discriminant);
+        float sNeg = Dot(r->direction, *dP) - sqrt(discriminant);
+        float s;
+        if (sPos < sNeg) {
+            s = sPos;
+        }
+        else {
+            s = sNeg;
+        }
+        ret = (point *) malloc(sizeof(point));
+        ret->x = r->origin.x + s * r->direction.x;
+        ret->y = r->origin.y + s * r->direction.y;
+        ret->z = r->origin.z + s * r->direction.z;
+        ret->w = 1;
+
+    }
+
+    return ret;
+}
+
+
+point *rayTriIntersection(Ray *r, point *v1, point *v2, point *v3) {
+    point e1, e2;
+    point P, Q, T;
+    float det, invDet, u, v;
+    float t;
+    point *ret = nullptr;
+
+    e1 = subtract(*v2, *v3);
+    e2 = subtract(*v3, *v1);
+    P = cross(r->direction, e2);
+    det = Dot(e1, P);
+    if (det > -EPSILON && det < EPSILON) {
+        return ret;
+    }
+    invDet = 1.f / det;
+    T = subtract(r->origin, *v1);
+    u = Dot(T, P) * invDet;
+
+    if (u < 0.f || u > 1.f) {
+        return ret;
+    }
+
+    Q = cross(T, e1);
+    v = Dot(r->direction, Q) * invDet;
+
+    if (v < 0.f || v > 1.f) {
+        return ret;
+    }
+
+    t = Dot(e2, Q) * invDet;
+
+    if (t > EPSILON) {
+        ret = (point *) malloc(sizeof(point));
+        ret->x = r->origin.x + r->direction.x * t;
+        ret->y = r->origin.y + r->direction.y * t;
+        ret->z = r->origin.z + r->direction.z * t;
+        ret->w = 0;
+    }
+
+    return ret;
+
+}
+
+point *sub(point *p1,  point *p2) {
+    p1->x -= p2->x;
+    p1->y -= p2->y;
+    p1->z -= p2->z;
+    return p1;
+}
+
+point *normalize(point *pt) {
+    float length = sqrt(pow(pt->x,2)+pow(pt->y,2)+pow(pt->z,2));
+    pt->x = pt->x / length;
+    pt->y = pt->y / length;
+    pt->z = pt->z / length;
+    pt->w = 1;
+    return pt;
+}
+
 
 point add(point p, point p2)
 {
@@ -587,8 +709,19 @@ point cross(point p, point p2)
 	temp.z = p.x * p2.y - p.y * p2.x;
 	temp.w = 0;
 	return temp;
-
 }
+
+point *scale(point *p, float val) {
+    p->x = val * p->x;
+    p->y = val * p->y;
+    p->z = val * p->z;
+    return p;
+}
+
+point *reflect(point *incident, point *normal) {
+    return sub(incident, scale(normal, 2.0 * Dot(*normal, *incident)));
+}
+
 
 float distance(point p, point p2)
 {
@@ -636,53 +769,37 @@ point* raySphereIntercept(Ray *r, Sphere *s)
 	return ret;
 }
 
+point *scale(point *p, point *scaleVals) {
+    p->x *= scaleVals->x;
+    p->y *= scaleVals->y;
+    p->z *= scaleVals->z;
+    return p;
+}
 
-point* rayTriIntersection(Ray *r, point *v1, point *v2, point  *v3)
-{
-	point e1, e2;
-	point P, Q, T;
-	float det, invDet, u, v;
-	float t;
-	point *ret = nullptr;
+point *clamp(point *p, float min, float max) {
+    if (p->x > max) {
+        p->x = max;
+    } else if (p->x < min) {
+        p->x = min;
+    }
+    if (p->y > max) {
+        p->y = max;
+    } else if (p->y < min) {
+        p->y = min;
+    }
+    if (p->z > max) {
+        p->z = max;
+    } else if (p->z < min) {
+        p->z = min;
+    }
+    return p;
+}
 
-	e1 = subtract(*v2, *v3);
-	e2 = subtract(*v3, *v1);
-	P = cross(r->direction, e2);
-	det = Dot(e1, P);
-	if (det > -EPSILON && det < EPSILON)
-	{
-		return ret;
-	}
-	invDet = 1.f / det;
-	T = subtract(r->origin, *v1);
-	u = Dot(T, P) * invDet;
-	
-	if (u < 0.f || u > 1.f)
-	{
-		return ret;
-	}
-
-	Q = cross(T, e1);
-	v = Dot(r->direction, Q) * invDet;
-
-	if (v < 0.f || v > 1.f)
-	{
-		return ret;
-	}
-
-	t = Dot(e2, Q) * invDet;
-
-	if (t > EPSILON)
-	{
-		ret = (point *)malloc(sizeof(point));
-		ret->x = r->origin.x + r->direction.x * t;
-		ret->y = r->origin.y + r->direction.y * t;
-		ret->z = r->origin.z + r->direction.z * t;
-		ret->w = 0;
-	}
-
-	return ret;
-
+float max(float input, float max) {
+    if (input > max) {
+        return max;
+    }
+    return input;
 }
 
 
@@ -855,5 +972,53 @@ float triArea(point v1, point v2, point v3)
 	return sqrt(s*(s - aLength) * (s - bLength) * (s * cLength));
 }
 
-point* localIllumination(point * p, point * normal, Material * mat){
+
+point *localIllumination(point *p, point *norm, point *view, Material *mat) {
+    point *normal = normalize((*norm).copy());
+
+    point *V = view;
+
+    point *totalIllumination = new point();
+    point *materialDiffuse = new point(mat->dr, mat->dg, mat->db);
+    point *materialSpecular = new point(mat->sr, mat->sg, mat->sb);
+    point *materialAmbient =  new point(mat->ar, mat->ag, mat->ab);
+    point *ambientLightI = new point(0.3, 0.3, 0.3);
+
+    //Compute ambient light for the scene.
+    point *ambientLight = scale(scale(ambientLightI, mat->k_a),materialAmbient);
+
+    for (int i = 0; i < numLights; i++) {
+        Light l = lights[i];
+
+        //The light's RGB color values and position in space
+        point *lightColor = new point(l.r, l.g, l.b);
+        point *lightPos = new point(l.x, l.y, l.z);
+        //Compute the amount of light generated by this light
+
+        //Compute light vector
+        point *L = normalize(sub(lightPos, p->copy()));
+        //Compute halfway vector
+        point *H = V->copy();
+        H = normalize(&add(*H, *L));
+
+        //compute diffuse lighting
+        point * diffuseLight = materialDiffuse->copy();
+        diffuseLight = scale(scale(scale(diffuseLight, max(Dot(*normal, *L), 0.0)), lightColor), mat->k_d);
+        diffuseLight = clamp(diffuseLight, 0.0, 1.0);
+
+        //Compute specular light
+        point * specularLight = lightColor->copy();
+        specularLight = scale(
+                scale(scale(specularLight, pow(max(Dot(*normal, *H), 0.0), mat->s_exp)), materialSpecular), mat->k_s);
+        specularLight = clamp(specularLight, 0.0, 1.0);
+        totalIllumination = &add(*totalIllumination, *diffuseLight);
+        totalIllumination = &add(*totalIllumination, *specularLight);
+
+        //Cleanup
+        delete lightColor, lightPos, L, H, diffuseLight, specularLight;
+    }
+    totalIllumination = &add(*totalIllumination, *ambientLight);
+    //Cleanup
+    delete normal, V, materialDiffuse, materialAmbient, materialSpecular, ambientLightI;
+    return totalIllumination;
 }
