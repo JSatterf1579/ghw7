@@ -569,6 +569,16 @@ point subtract(point p, point p2)
 	return temp;
 }
 
+point add(point p, point p2)
+{
+	point temp;
+	temp.x = p.x + p2.x;
+	temp.y = p.y + p2.y;
+	temp.z = p.z + p2.z;
+	temp.w = 0;
+	return temp;
+}
+
 point cross(point p, point p2)
 {
 	point temp;
@@ -798,7 +808,52 @@ point* rayTrace(Ray *r, int depth)
 	}
 }
 
-point* getTriNormal(point *p, )
+point getTriNormal(point *p, Mesh *m, int i)
+{
+	//Getting the triangle verts
+	point v1 = m->vertList[m->faceList[i].v1];
+	point v2 = m->vertList[m->faceList[i].v2];
+	point v3 = m->vertList[m->faceList[i].v3];
+
+	//Getting the triangle normals
+	point n1 = m->normList[m->faceList[i].n1];
+	point n2 = m->normList[m->faceList[i].n2];
+	point n3 = m->normList[m->faceList[i].n3];
+
+	float a1 = triArea(v2, v3, *p);
+	float a2 = triArea(v1, v3, *p);
+	float a3 = triArea(v1, v2, *p);
+	float A = triArea(v1, v2, v3);
+
+	point comp1 = multiply(n1, (a1 / A));
+	point comp2 = multiply(n2, (a2 / A));
+	point comp3 = multiply(n3, (a3 / A));
+
+	return add(comp3, add(comp1, comp2));
+}
+
+
+point getSphereNormal(point *p, Sphere *s)
+{
+	point center;
+	center.x = s->x;
+	center.y = s->y;
+	center.z = s->z;
+	center.w = 0;
+
+	return subtract(center, *p);
+}
+
+float triArea(point v1, point v2, point v3)
+{
+	float aLength = distance(v1, v2);
+	float bLength = distance(v1, v3);
+	float cLength = distance(v2, v3);
+
+	float s = (aLength + bLength + cLength) / 2;
+
+	return sqrt(s*(s - aLength) * (s - bLength) * (s * cLength));
+}
 
 point* localIllumination(point * p, point * normal, Material * mat){
 }
