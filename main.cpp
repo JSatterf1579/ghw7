@@ -26,7 +26,7 @@ int numSpheres, numMeshes, numLights;
 float imagePlaneDistance = 8.f;
 float imageplaneHalfSide = 5.f;
 
-const int INITIAL_RES = 400;
+const int INITIAL_RES = 5;
 
 float *modelWorldMatrix;
 FrameBuffer *fb;
@@ -126,7 +126,7 @@ point Transform(float *matrix, point p);
 
 point *rayTriIntersection(Ray *r, point *v1, point *v2, point *v3);
 
-Color *localIllumination(point *p, point *normal, point *view, Material *mat);
+Color *localIllumination(point p, point norm, point view, Material mat);
 
 float triArea(point v1, point v2, point v3);
 
@@ -213,6 +213,9 @@ void meshReader(char *filename, int sign, Mesh *mesh, float transformX, float tr
         mesh->faceList[i].v1 = ix - 1;
         mesh->faceList[i].v2 = iy - 1;
         mesh->faceList[i].v3 = iz - 1;
+		mesh->faceList[i].n1 = ix - 1;
+		mesh->faceList[i].n2 = iy - 1;
+		mesh->faceList[i].n3 = iz - 1;
     }
     fclose(fp);
 
@@ -481,10 +484,12 @@ void display(void) {
 void render()
 {
 	point origin = point(0, 0, 0);
-	for (float y = 0; y < fb->GetHeight(); y ++)
+	//printf("Frambuffer size (%d, %d)\n", fb->GetHeight(), fb->GetWidth());
+	for (int y = 0; y < fb->GetHeight(); y ++)
 	{
-		for (float x = 0; y < fb->GetWidth(); x++)
+		for (int x = 0; x < fb->GetWidth(); x++)
 		{
+			//printf("Rendering pixel (%d, %d)\n", x, y);
 			float ypx = (y / (fb->GetHeight() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
 			float xpx = (x / (fb->GetWidth() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
 
@@ -557,6 +562,8 @@ int main(int argc, char *argv[]) {
 
     fb = new FrameBuffer(INITIAL_RES, INITIAL_RES);
 
+	
+
 //	BresenhamLine(fb, fb->GetWidth()*0.1, fb->GetHeight()*0.1, fb->GetWidth()*0.9, fb->GetHeight()*0.9, Color(1, 0, 0));
 
 
@@ -582,7 +589,8 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    sceneReader("./red_sphere_and_teapot.rtl");
+    sceneReader("./redsphere.rtl");
+	render();
 
     // Switch to main loop
 	glutMainLoop();
@@ -833,7 +841,7 @@ void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint)
 	for (i = 0; i < numMeshes; i++)
 	{
 		point *meshIntersect = rayMeshIntersection(r, &meshes[i], closestMeshTri);
-		if (meshIntersect != nullptr && (closestPoint != nullptr || distance(r->origin, *meshIntersect) < distance(r->origin, *closestPoint)))
+		if (meshIntersect != nullptr && (closestPoint == nullptr || distance(r->origin, *meshIntersect) < distance(r->origin, *closestPoint)))
 		{
 			if (closestPoint != nullptr)
 			{
@@ -856,7 +864,7 @@ void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint)
 	for (i = 0; i < numSpheres; i++)
 	{
 		point *sphereIntersect = raySphereIntercept(r, &spheres[i]);
-		if (sphereIntersect != nullptr && (closestPoint != nullptr || distance(r->origin, *sphereIntersect) < distance(r->origin, *closestPoint)))
+		if (sphereIntersect != nullptr && (closestPoint == nullptr || distance(r->origin, *sphereIntersect) < distance(r->origin, *closestPoint)))
 		{
 			if (closestPoint != nullptr)
 			{
@@ -908,7 +916,7 @@ Color rayTrace(Ray *r, int depth)
 		Color ret = Color(0.f, 0.f, 0.f);
 		return ret;
 	}
-	Color c = *localIllumination(closestPoint, norm, &r->origin, mat);
+	Color c = *localIllumination(*closestPoint, *norm, r->origin, *mat);
 
 
 	depth--;
@@ -987,7 +995,7 @@ float triArea(point v1, point v2, point v3)
 }
 
 
-Color *localIllumination(const point p, const point norm, const point view, const Material mat) {
+Color *localIllumination(point p, point norm, point view, Material mat) {
     point normal = normalize(norm);
 
     point V = view;
