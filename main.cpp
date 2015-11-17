@@ -136,6 +136,8 @@ point getSphereNormal(point *p, Sphere *s);
 
 point normalize(point pt);
 
+Color rayTrace(Ray *r, int depth);
+
 
 // The mesh reader itself
 // It can read *very* simple obj files
@@ -818,13 +820,12 @@ point* rayMeshIntersection(Ray *r, Mesh *m, int *triOut)
 }
 
 
-Color rayTrace(Ray *r, int depth)
+void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint)
 {
-
-	point *closestPoint = nullptr;
 	Sphere *closestSphere = nullptr;
 	Mesh *closestMesh = nullptr;
 	int *closestMeshTri = (int *)malloc(sizeof(int));
+	bool intersect = false;
 	bool sphereCloser = false;
 
 	//Iterate through all meshes
@@ -840,6 +841,7 @@ Color rayTrace(Ray *r, int depth)
 			}
 			closestPoint = meshIntersect;
 			closestMesh = &meshes[i];
+			intersect = true;
 		}
 		else
 		{
@@ -863,6 +865,7 @@ Color rayTrace(Ray *r, int depth)
 			closestPoint = sphereIntersect;
 			closestSphere = &spheres[i];
 			sphereCloser = true;
+			intersect = true;
 		}
 		else
 		{
@@ -873,16 +876,11 @@ Color rayTrace(Ray *r, int depth)
 		}
 	}
 
-	//Completely missed everything, return ambient lighting of scene
-	if (closestPoint == nullptr)
+	if(!intersect)
 	{
-		Color ret = Color(0.f, 0.f, 0.f);
-		return ret;
+		return;
 	}
 
-	depth--;
-	Material *mat;
-	point *norm;
 	if (sphereCloser)
 	{
 		mat = closestSphere->material;
@@ -893,8 +891,27 @@ Color rayTrace(Ray *r, int depth)
 		mat = closestMesh->material;
 		norm = &getTriNormal(closestPoint, closestMesh, *closestMeshTri);
 	}
+}
+
+Color rayTrace(Ray *r, int depth)
+{
+
+	Material *mat;
+	point *norm;
+	point *closestPoint = nullptr;
+
+	raycast(r, mat, norm, closestPoint);
+
+	//Completely missed everything, return ambient lighting of scene
+	if (closestPoint == nullptr)
+	{
+		Color ret = Color(0.f, 0.f, 0.f);
+		return ret;
+	}
 	Color c = *localIllumination(closestPoint, norm, &r->origin, mat);
 
+
+	depth--;
 	//If we haven't bottomed out
 	if (depth > 0)
 	{
@@ -911,7 +928,6 @@ Color rayTrace(Ray *r, int depth)
 
 		if (mat->k_refract > 0.f)
 		{
-			point *refractReulst = nullptr;
 			Ray *refractRay = (Ray *)malloc(sizeof(Ray));
 			refractRay->origin = *closestPoint;
 			refractRay->direction = refract(*closestPoint, r->direction, mat->ref_index);
