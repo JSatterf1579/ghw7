@@ -813,7 +813,7 @@ point* rayMeshIntersection(Ray *r, Mesh *m, int *triOut)
 }
 
 
-point* rayTrace(Ray *r, int depth)
+Color rayTrace(Ray *r, int depth)
 {
 	//Default to black for missed ray
 	point *closestPoint = nullptr;
@@ -871,39 +871,51 @@ point* rayTrace(Ray *r, int depth)
 	//Completely missed everything, return ambient lighting of scene
 	if (closestPoint == nullptr)
 	{
-		closestPoint = (point *)malloc(sizeof(point));
-		closestPoint->x = .3;
-		closestPoint->y = .3;
-		closestPoint->z = .3;
-		closestPoint->w = 0.f;
-		return closestPoint;
+		Color ret = Color(0.f, 0.f, 0.f);
+		return ret;
 	}
 
 	depth--;
 	Material *mat;
+	point *norm;
 	if (sphereCloser)
 	{
 		mat = closestSphere->material;
+		norm = &getSphereNormal(closestPoint, closestSphere);
 	}
 	else
 	{
 		mat = closestMesh->material;
+		norm = &getTriNormal(closestPoint, closestMesh, *closestMeshTri);
 	}
+	Color c = localIllumination(closestPoint, norm, &r->origin, mat);
+
 	//If we haven't bottomed out
 	if (depth > 0)
 	{
 		//Hit a surface, raycast to next surface (reflect + refract)
-		Ray *reflectRay = (Ray *)malloc(sizeof(Ray));
-		reflectRay->origin = *closestPoint;
+		point *reflectResult = nullptr;
+		if (mat->k_relect > 0.f)
+		{
+			Ray *reflectRay = (Ray *)malloc(sizeof(Ray));
+			reflectRay->origin = *closestPoint;
+			reflectRay->direction = *reflect(closestPoint, &r->direction);
+			Color reflected = rayTrace(reflectRay, depth);
+			c = c + reflected;
+		}
 
-		Ray *refractRay = (Ray *)malloc(sizeof(Ray));
-		refractRay->origin = *closestPoint;
+		if (mat->k_refract > 0.f)
+		{
+			point *refractReulst = nullptr;
+			Ray *refractRay = (Ray *)malloc(sizeof(Ray));
+			refractRay->origin = *closestPoint;
+			refractRay->direction = *refract(closestPoint, &r->direction, mat->ref_index);
+			Color refracted = rayTrace(refractRay, depth);
+			c = c + refracted;
+		}
+	}
 
-	}
-	else
-	{
-		//return localIllumination(closestPoint, )
-	}
+	return c;
 }
 
 point getTriNormal(point *p, Mesh *m, int i)
