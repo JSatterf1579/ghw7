@@ -70,7 +70,7 @@ public:
     }
     point operator-(point c)
     {
-        return point(c.x - x, c.y - y, c.z - z);
+        return point(x - c.x, y - c.y, z - c.z);
     }
 };
 
@@ -305,7 +305,7 @@ void sceneReader(char *filename) {
             ss >> l->b;
             lights[seenLights] = *l;
             seenLights++;
-            std::string type = (l->light_type == 0) ? "Point" : "Directional";
+            std::string type = (l->light_type == 0) ? "Directional" : "Point";
             cout << "We found a " << type << " Light at position (" << l->x << ", " << l->y << ", " << l->z <<
             ") with color (" << l->r << ", " << l->g << ", " << l->b << ").\n";
         } else if (lineType == 'S' && seenSpheres < numSpheres) {

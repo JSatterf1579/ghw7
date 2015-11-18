@@ -29,7 +29,7 @@ public:
 	}
 	Color operator-(Color c)
 	{
-		return Color(c.r - r, c.g - g, c.b - b);
+		return Color(r - c.r, g - c.g, b - c.b);
 	}
 	Color Clamp(double min, double max){
 		Color temp = Color(r,g,b);
