@@ -1024,7 +1024,7 @@ point getSphereNormal(point *p, Sphere *s)
 
 float triArea(point v1, point v2, point v3)
 {
-	point e1 = v1 - v2;
+	point e1 = v2 - v3;
 	point e2 = v1 - v3;
 	point c = cross(e1, e2);
 	return magnitude(c) / 2;
