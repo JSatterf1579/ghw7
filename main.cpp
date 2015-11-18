@@ -593,7 +593,7 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    sceneReader("./transparent_sphere_and_teapot.rtl");
+    sceneReader("./redsphere.rtl");
 	render();
 
     // Switch to main loop
@@ -897,13 +897,15 @@ void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint)
 	{
 		mat = closestSphere->material;
         point sphereNorm = getSphereNormal(closestPoint, closestSphere);
-		norm = &sphereNorm;
+		norm = new point(sphereNorm.x, sphereNorm.y, sphereNorm.z);
+		//norm = &sphereNorm;
 	}
 	else
 	{
 		mat = closestMesh->material;
         point meshNorm = getTriNormal(closestPoint, closestMesh, *closestMeshTri);
-		norm = &meshNorm;
+		norm = new point(meshNorm.x, meshNorm.y, meshNorm.z);
+		//norm = &meshNorm;
 	}
 }
 
@@ -960,6 +962,8 @@ Color rayTrace(Ray *r, int depth)
 			c = c + refracted * mat->k_refract;
 		}
 	}
+
+	delete norm;
 
 	return c;
 }
