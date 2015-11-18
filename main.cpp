@@ -1,6 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef _WIN32
 #include <gl\glut.h>
+#endif
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#include <GLUT/glut.h>
+#endif
 #include <math.h>
 
 #include "frame_buffer.h"
