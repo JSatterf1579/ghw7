@@ -70,7 +70,7 @@ public:
     }
     point operator-(point c)
     {
-        return point(c.x - x, c.y - y, c.z - z);
+        return point(x - c.x, y - c.y, z - c.z);
     }
 };
 
