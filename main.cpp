@@ -615,7 +615,7 @@ point Transform(float *matrix, point p) {
 }
 
 
-float Dot(point &v, point &vx) {
+float Dot(point v, point vx) {
     return (v.x * vx.x) + (v.y * vx.y) + (v.z * vx.z);
 }
 
@@ -762,11 +762,10 @@ point add(point p, point p2)
 
 point reflect(point incident, point normal) {
 	point norm = normalize(normal);
+    point inci = normalize(incident * -1);
 	//incident = incident * -1;
-    return incident - norm * Dot(norm, incident) * 2.f;
+    return inci - norm * Dot(norm, inci) * 2.f;
 }
-
-
 
 point refract(point incident, point normal, float indexI, float indexR, bool isInternal) {
 	point norm;
@@ -779,7 +778,7 @@ point refract(point incident, point normal, float indexI, float indexR, bool isI
 		norm = normal * -1;
 	}
 	norm = normalize(norm);
-	
+	incident = normalize(incident);
 	float indexRatio = indexI / indexR;
 	float k = 1.0f - pow(indexRatio, 2) * (1.0f - pow(Dot(incident, normal), 2));
 	if(k < 0.0f)
