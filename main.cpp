@@ -26,7 +26,7 @@ int numSpheres, numMeshes, numLights;
 float imagePlaneDistance = 8.f;
 float imageplaneHalfSide = 5.f;
 
-const int INITIAL_RES = 5;
+const int INITIAL_RES = 256;
 
 float *modelWorldMatrix;
 FrameBuffer *fb;
@@ -107,6 +107,7 @@ Light *lights;
 
 typedef struct _Ray {
     point origin, direction;
+	bool isExternal;
 } Ray;
 
 
@@ -504,6 +505,7 @@ void render()
 			r->origin = origin;
 			point pxPoint = normalize(subtract(point(xpx, ypx, -imagePlaneDistance), origin));
 			r->direction = pxPoint;
+			r->isExternal = true;
 
 			Color c = rayTrace(r, 3);
 			fb->SetPixel(x, y, c);
@@ -591,7 +593,7 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    sceneReader("./red_sphere_and_teapot.rtl");
+    sceneReader("./transparent_sphere_and_teapot.rtl");
 	render();
 
     // Switch to main loop
@@ -917,7 +919,7 @@ Color rayTrace(Ray *r, int depth)
 	//Completely missed everything, return ambient lighting of scene
 	if (closestPoint == nullptr)
 	{
-		Color ret = Color(0.3, 0.3, 0.3);
+		Color ret = Color(0.f, 0.f, 0.f);
 		return ret;
 	}
 	Color c = *localIllumination(*closestPoint, *norm, r->origin, *mat);
@@ -929,11 +931,12 @@ Color rayTrace(Ray *r, int depth)
 	{
 		//Hit a surface, raycast to next surface (reflect + refract)
 		point *reflectResult = nullptr;
-		if (mat->k_relect > 0.f)
+		if (mat->k_relect > 0.f && r->isExternal)
 		{
 			Ray *reflectRay = (Ray *)malloc(sizeof(Ray));
 			reflectRay->origin = *closestPoint;
 			reflectRay->direction = reflect(*closestPoint, r->direction);
+			reflectRay->isExternal = true;
 			Color reflected = rayTrace(reflectRay, depth);
 			c = c + reflected * mat->k_relect;
 		}
@@ -942,7 +945,16 @@ Color rayTrace(Ray *r, int depth)
 		{
 			Ray *refractRay = (Ray *)malloc(sizeof(Ray));
 			refractRay->origin = *closestPoint;
-			refractRay->direction = refract(*closestPoint, r->direction, mat->ref_index);
+			if (r->isExternal)
+			{
+				refractRay->direction = refract(*closestPoint, r->direction, mat->ref_index);
+				refractRay->isExternal = false;
+			}
+			else
+			{
+				refractRay->direction = refract(*closestPoint, r->direction, -mat->ref_index);
+				refractRay->isExternal = true;
+			}
 			Color refracted = rayTrace(refractRay, depth);
 			c = c + refracted * mat->k_refract;
 		}
