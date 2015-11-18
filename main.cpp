@@ -767,12 +767,21 @@ point reflect(point incident, point normal) {
 
 
 
-point refract(point incident, point normal, float indexI, float indexR) {
-	float c1 = -Dot(normal, incident);
+point refract(point incident, point normal, float indexI, float indexR, bool isInternal) {
+	point norm;
+	if(isInternal)
+	{
+		norm = normal;
+	}
+	else
+	{
+		norm = normal * -1;
+	}
+	float c1 = -Dot(norm, incident);
 	float indexRatio = indexI / indexR;
 	float c2 = sqrt(1 - pow(indexRatio, 2) * (1 - pow(c1, 2)));
 
-	return (incident * indexRatio) + normal * (indexRatio * c1 - c2);
+	return (incident * indexRatio) + norm * (indexRatio * (c1 - c2));
 }
 
 
@@ -923,12 +932,13 @@ Color rayTrace(Ray *r, int depth)
 			refractRay->origin = *closestPoint;
 			if (r->isExternal)
 			{
-				refractRay->direction = refract(r->direction, *norm, 1, mat->ref_index);
+				refractRay->direction = refract(r->direction, *norm, 1, mat->ref_index, true);
+				
 				refractRay->isExternal = false;
 			}
 			else
 			{
-				refractRay->direction = refract(r->direction, *norm, mat->ref_index, 1);
+				refractRay->direction = refract(r->direction, *norm, mat->ref_index, 1, false);
 				refractRay->isExternal = true;
 			}
 			Color refracted = rayTrace(refractRay, depth);
