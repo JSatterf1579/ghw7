@@ -922,7 +922,8 @@ Color rayTrace(Ray *r, int depth)
 		Color ret = Color(0.f, 0.f, 0.f);
 		return ret;
 	}
-	Color c = *localIllumination(*closestPoint, *norm, r->origin, *mat);
+    point viewingVector = r->direction * -1;
+	Color c = *localIllumination(*closestPoint, *norm, viewingVector, *mat);
 
 
 	depth--;
@@ -1014,7 +1015,7 @@ float triArea(point v1, point v2, point v3)
 Color *localIllumination(point p, point norm, point view, Material mat) {
     point normal = normalize(norm);
 
-    point V = view;
+    point V = normalize(view);
 
     Color *totalIllumination = new Color();
     Color materialDiffuse = Color(mat.dr, mat.dg, mat.db);
