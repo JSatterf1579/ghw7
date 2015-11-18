@@ -688,22 +688,22 @@ point *raySphereIntercept(Ray *r, Sphere *s) {
 }
 
 
-point *rayTriIntersection(Ray *r, point *v1, point *v2, point *v3) {
+point *rayTriIntersection(Ray *r, point v1, point v2, point v3) {
     point e1, e2;
     point P, Q, T;
     float det, invDet, u, v;
     float t;
     point *ret = nullptr;
 
-    e1 = subtract(*v2, *v3);
-    e2 = subtract(*v3, *v1);
+    e1 = subtract(v2, v3);
+    e2 = subtract(v3, v1);
     P = cross(r->direction, e2);
     det = Dot(e1, P);
     if (det > -EPSILON && det < EPSILON) {
         return ret;
     }
     invDet = 1.f / det;
-    T = subtract(r->origin, *v1);
+    T = subtract(r->origin, v1);
     u = Dot(T, P) * invDet;
 
     if (u < 0.f || u > 1.f) {
@@ -807,7 +807,7 @@ point* rayMeshIntersection(Ray *r, Mesh *m, int *triOut)
 	for (i = 0; i < m->faces; i++)
 	{
 		faceStruct face = m->faceList[i];
-		point *faceIntersect = rayTriIntersection(r, &m->vertList[face.v1], &m->vertList[face.v2], &m->vertList[face.v3]);
+		point *faceIntersect = rayTriIntersection(r, m->vertList[face.v1], m->vertList[face.v2], m->vertList[face.v3]);
 		if (faceIntersect != nullptr && (res == nullptr || distance(r->origin, *faceIntersect) < distance(r->origin, *res)))
 		{
 			if (res != nullptr)
@@ -982,9 +982,9 @@ point getTriNormal(point *p, Mesh *m, int i)
 	float a3 = triArea(v1, v2, *p);
 	float A = triArea(v1, v2, v3);
 
-	point comp1 = multiply(n1, (a1 / A));
-	point comp2 = multiply(n2, (a2 / A));
-	point comp3 = multiply(n3, (a3 / A));
+	point comp1 = n1 * (a1 / A);
+	point comp2 = n2 * (a2 / A);
+	point comp3 = n3 * (a3 / A);
 
 	return add(comp3, add(comp1, comp2));
 }
@@ -1003,13 +1003,10 @@ point getSphereNormal(point *p, Sphere *s)
 
 float triArea(point v1, point v2, point v3)
 {
-	float aLength = distance(v1, v2);
-	float bLength = distance(v1, v3);
-	float cLength = distance(v2, v3);
-
-	float s = (aLength + bLength + cLength) / 2;
-
-	return sqrt(s*(s - aLength) * (s - bLength) * (s * cLength));
+	point e1 = v1 - v2;
+	point e2 = v1 - v3;
+	point c = cross(e1, e2);
+	return magnitude(c) / 2;
 }
 
 
