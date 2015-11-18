@@ -589,8 +589,8 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    //sceneReader("./redsphere2.rtl");
-	sceneReader("./red_sphere_and_teapot.rtl");
+    sceneReader("./spheres.rtl");
+	//sceneReader("./red_sphere_and_teapot.rtl");
 	render();
 
     // Switch to main loop
@@ -761,22 +761,18 @@ point add(point p, point p2)
 }
 
 point reflect(point incident, point normal) {
-    return incident - normal * (2.0 * Dot(normal, incident));
+	float c1 = -Dot(normal, incident);
+    return incident + ( normal * 2 * c1);
 }
 
 
 
-point refract(point incident, point normal, float index) {
-	float  dotProd = Dot(normal, incident);
-	float k = 1 - index * index * (1.0 - dotProd * dotProd);
-	if (k < 0.0) {
-		return point();
-	}
-	else {
-		//R = eta * I - (eta * dot(N, I) + sqrt(k)) * N;
-        point retVal = incident * index - normal * ((float)(index * dotProd + sqrt(k)));
-		return retVal;
-	}
+point refract(point incident, point normal, float indexI, float indexR) {
+	float c1 = -Dot(normal, incident);
+	float indexRatio = indexI / indexR;
+	float c2 = sqrt(1 - pow(indexRatio, 2) * (1 - pow(c1, 2)));
+
+	return (incident * indexRatio) + normal * (indexRatio * c1 - c2);
 }
 
 
@@ -841,24 +837,7 @@ void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint)
 	int i;
 	for (i = 0; i < numMeshes; i++)
 	{
-		point *meshIntersect = rayMeshIntersection(r, &meshes[i], closestMeshTri);
-		if (meshIntersect != nullptr && (closestPoint == nullptr || distance(r->origin, *meshIntersect) < distance(r->origin, *closestPoint)))
-		{
-			if (closestPoint != nullptr)
-			{
-				free(closestPoint);
-			}
-			closestPoint = meshIntersect;
-			closestMesh = &meshes[i];
-			intersect = true;
-		}
-		else
-		{
-			if (meshIntersect != nullptr)
-			{
-				free(meshIntersect);
-			}
-		}
+		
 	}
 
 	//Iterate through all spheres
@@ -899,10 +878,7 @@ void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint)
 	}
 	else
 	{
-		mat = closestMesh->material;
-        point meshNorm = getTriNormal(closestPoint, closestMesh, *closestMeshTri);
-		norm = new point(meshNorm.x, meshNorm.y, meshNorm.z);
-		//norm = &meshNorm;
+		
 	}
 }
 
@@ -935,10 +911,10 @@ Color rayTrace(Ray *r, int depth)
 		{
 			Ray *reflectRay = (Ray *)malloc(sizeof(Ray));
 			reflectRay->origin = *closestPoint;
-			reflectRay->direction = reflect(*closestPoint, r->direction);
+			reflectRay->direction = reflect(r->direction, *norm);
 			reflectRay->isExternal = true;
 			Color reflected = rayTrace(reflectRay, depth);
-			c = c + reflected * mat->k_relect;
+			c = c + (reflected * mat->k_relect);
 		}
 
 		if (mat->k_refract > 0.f)
@@ -947,16 +923,16 @@ Color rayTrace(Ray *r, int depth)
 			refractRay->origin = *closestPoint;
 			if (r->isExternal)
 			{
-				refractRay->direction = refract(*closestPoint, r->direction, mat->ref_index);
+				refractRay->direction = refract(r->direction, *norm, 1, mat->ref_index);
 				refractRay->isExternal = false;
 			}
 			else
 			{
-				refractRay->direction = refract(*closestPoint, r->direction, -mat->ref_index);
+				refractRay->direction = refract(r->direction, *norm, mat->ref_index, 1);
 				refractRay->isExternal = true;
 			}
 			Color refracted = rayTrace(refractRay, depth);
-			c = c + refracted * mat->k_refract;
+			c = c + (refracted * mat->k_refract);
 		}
 	}
 
