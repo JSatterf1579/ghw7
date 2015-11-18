@@ -492,10 +492,6 @@ void render()
 	{
 		for (int x = 0; x < fb->GetWidth(); x++)
 		{
-			Material *mat;
-			point *norm;
-			point *closestPoint = nullptr;
-
 			printf("Rendering pixel (%d, %d)\n", x, y);
 			float ypx = (y / (fb->GetHeight() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
 			float xpx = (x / (fb->GetWidth() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
