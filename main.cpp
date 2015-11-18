@@ -139,7 +139,7 @@ point normalize(point pt);
 
 Color rayTrace(Ray *r, int depth);
 
-void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint);
+void raycast(Ray* r, Material* mat, point* norm, point* closestPoint);
 
 point subtract(point p, point p2);
 
@@ -593,7 +593,7 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    sceneReader("./transparent_sphere_and_teapot.rtl");
+    sceneReader("./redsphere.rtl");
 	render();
 
     // Switch to main loop
@@ -832,7 +832,7 @@ point* rayMeshIntersection(Ray *r, Mesh *m, int *triOut)
 }
 
 
-void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint)
+void raycast(Ray* r, Material* mat, point* norm, point* closestPoint)
 {
 	Sphere *closestSphere = nullptr;
 	Mesh *closestMesh = nullptr;
@@ -910,8 +910,8 @@ void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint)
 Color rayTrace(Ray *r, int depth)
 {
 
-	Material *mat;
-	point *norm;
+	Material *mat = nullptr;
+	point *norm = nullptr;
 	point *closestPoint = nullptr;
 
 	raycast(r, mat, norm, closestPoint);
@@ -923,7 +923,8 @@ Color rayTrace(Ray *r, int depth)
 		return ret;
 	}
     point viewingVector = r->direction * -1;
-	Color c = *localIllumination(*closestPoint, *norm, viewingVector, *mat);
+	point tempNorm = point(norm->x, norm->y, norm->z);
+	Color c = *localIllumination(*closestPoint, tempNorm, viewingVector, *mat);
 
 
 	depth--;
