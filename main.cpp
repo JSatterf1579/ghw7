@@ -492,7 +492,7 @@ void render()
 	{
 		for (int x = 0; x < fb->GetWidth(); x++)
 		{
-			printf("Rendering pixel (%d, %d)\n", x, y);
+			//printf("Rendering pixel (%d, %d)\n", x, y);
 			float ypx = (y / (fb->GetHeight() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
 			float xpx = (x / (fb->GetWidth() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
 
@@ -589,7 +589,7 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    sceneReader("./redsphere.rtl");
+    sceneReader("./red_sphere_and_teapot.rtl");
 	render();
 
     // Switch to main loop
@@ -1037,10 +1037,10 @@ Color *localIllumination(point p, point norm, point view, Material mat) {
         point L;
         if(l.light_type == 0){
             //Directional
-            L = normalize(lightPos * -1);
+            L = normalize(lightPos * -1) * -1;
         } else if (l.light_type == 1){
             //Point lights
-            L = normalize(lightPos - p);
+            L = normalize(lightPos - p) * -1;
         }
 
         //Compute halfway vector
@@ -1057,6 +1057,6 @@ Color *localIllumination(point p, point norm, point view, Material mat) {
         totalIllumination->g += specularLight.g + diffuseLight.g;
         totalIllumination->b += specularLight.b + diffuseLight.b;
     }
-    cout << "Total Illumination Color: " << totalIllumination->r << ", " << totalIllumination->g << ", " << totalIllumination->b << "\n";
+    //cout << "Total Illumination Color: " << totalIllumination->r << ", " << totalIllumination->g << ", " << totalIllumination->b << "\n";
     return totalIllumination;
 }
