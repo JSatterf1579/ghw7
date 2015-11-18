@@ -589,8 +589,8 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    sceneReader("./spheres.rtl");
-	//sceneReader("./red_sphere_and_teapot.rtl");
+    //sceneReader("./spheres.rtl");
+	sceneReader("./red_sphere_and_teapot.rtl");
 	render();
 
     // Switch to main loop
@@ -761,8 +761,9 @@ point add(point p, point p2)
 }
 
 point reflect(point incident, point normal) {
-	float c1 = -Dot(normal, incident);
-    return incident + ( normal * 2 * c1);
+	point norm = normalize(normal);
+	//incident = incident * -1;
+    return incident - norm * Dot(norm, incident) * 2.f;
 }
 
 
@@ -777,11 +778,20 @@ point refract(point incident, point normal, float indexI, float indexR, bool isI
 	{
 		norm = normal * -1;
 	}
-	float c1 = -Dot(norm, incident);
+	norm = normalize(norm);
+	
 	float indexRatio = indexI / indexR;
+	float k = 1.0f - pow(indexRatio, 2) * (1.0f - pow(Dot(incident, normal), 2));
+	if(k < 0.0f)
+	{
+		printf("K < 0");
+	}
+	return (incident * indexRatio) - normal * (indexRatio * Dot(norm, incident) + sqrt(k));
+
+	/*float c1 = -Dot(norm, incident);
 	float c2 = sqrt(1 - pow(indexRatio, 2) * (1 - pow(c1, 2)));
 
-	return (incident * indexRatio) + norm * (indexRatio * (c1 - c2));
+	return (incident * indexRatio) + norm * (indexRatio * c1 - c2);*/
 }
 
 
@@ -846,7 +856,24 @@ void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint)
 	int i;
 	for (i = 0; i < numMeshes; i++)
 	{
-		
+		point *meshIntersect = rayMeshIntersection(r, &meshes[i], closestMeshTri);
+		if (meshIntersect != nullptr && (closestPoint == nullptr || distance(r->origin, *meshIntersect) < distance(r->origin, *closestPoint)))
+		{
+			if (closestPoint != nullptr)
+			{
+				free(closestPoint);
+			}
+			closestPoint = meshIntersect;
+			closestMesh = &meshes[i];
+			intersect = true;
+		}
+		else
+		{
+			if (meshIntersect != nullptr)
+			{
+				free(meshIntersect);
+			}
+		}
 	}
 
 	//Iterate through all spheres
@@ -873,7 +900,7 @@ void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint)
 		}
 	}
 
-	if(!intersect)
+	if (!intersect)
 	{
 		return;
 	}
@@ -887,7 +914,10 @@ void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint)
 	}
 	else
 	{
-		
+		mat = closestMesh->material;
+		point meshNorm = getTriNormal(closestPoint, closestMesh, *closestMeshTri);
+		norm = new point(meshNorm.x, meshNorm.y, meshNorm.z);
+		//norm = &meshNorm;
 	}
 }
 
