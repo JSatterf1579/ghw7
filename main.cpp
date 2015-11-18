@@ -595,7 +595,7 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    //sceneReader("./spheres.rtl");
+    //sceneReader("./redsphere.rtl");
 	sceneReader("./red_sphere_and_teapot.rtl");
 	render();
 
@@ -768,9 +768,9 @@ point add(point p, point p2)
 
 point reflect(point incident, point normal) {
 	point norm = normalize(normal);
-    point inci = normalize(incident * -1);
+    // inci = normalize(incident * -1);
 	//incident = incident * -1;
-    return inci - norm * Dot(norm, inci) * 2.f;
+    return incident - norm * Dot(norm, incident) * 2.f;
 }
 
 point refract(point incident, point normal, float indexI, float indexR, bool isInternal) {
@@ -941,7 +941,7 @@ Color rayTrace(Ray *r, int depth)
 		Color ret = Color(0.f, 0.f, 0.f);
 		return ret;
 	}
-    point viewingVector = r->direction * -1;
+    point viewingVector = point(0, 0, 0) - *closestPoint;
 	Color c = *localIllumination(*closestPoint, *norm, viewingVector, *mat);
 
 
