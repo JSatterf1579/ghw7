@@ -589,7 +589,8 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    sceneReader("./red_sphere_and_teapot.rtl");
+    //sceneReader("./redsphere2.rtl");
+	sceneReader("./red_sphere_and_teapot.rtl");
 	render();
 
     // Switch to main loop
@@ -793,9 +794,9 @@ point *scale(point *p, point *scaleVals) {
 
 float max(float input, float max) {
     if (input > max) {
-        return max;
+        return input;
     }
-    return input;
+    return max;
 }
 
 
@@ -997,7 +998,7 @@ point getSphereNormal(point *p, Sphere *s)
 	center.z = s->z;
 	center.w = 0;
 
-	return subtract(center, *p);
+	return subtract(*p, center);
 }
 
 float triArea(point v1, point v2, point v3)
@@ -1037,21 +1038,24 @@ Color *localIllumination(point p, point norm, point view, Material mat) {
         point L;
         if(l.light_type == 0){
             //Directional
-            L = normalize(lightPos * -1) * -1;
+            L = normalize(lightPos * -1);
         } else if (l.light_type == 1){
             //Point lights
-            L = normalize(lightPos - p) * -1;
+            L = normalize(lightPos - p);
         }
 
         //Compute halfway vector
         point H = normalize(V+L);
 
+
+		float nLDot = Dot(normal, L);
+		float nHDot = Dot(normal, H);
         //compute diffuse lighting
         Color diffuseLight = materialDiffuse * max(Dot(normal, L), 0.0) * lightColor * mat.k_d;
         diffuseLight = diffuseLight.Clamp(0.0, 1.0);
 
         //Compute specular light
-        Color specularLight = materialSpecular * mat.k_s * pow(max(Dot(normal, H), 0.0), mat.s_exp);
+        Color specularLight = lightColor * materialSpecular * mat.k_s * pow(max(Dot(normal, H), 0.0), mat.s_exp);
         specularLight = specularLight.Clamp(0.0, 1.0);
         totalIllumination->r += specularLight.r + diffuseLight.r;
         totalIllumination->g += specularLight.g + diffuseLight.g;
