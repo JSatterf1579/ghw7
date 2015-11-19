@@ -564,6 +564,30 @@ void keyboard(unsigned char key, int x, int y) {
 			render();
 //		BresenhamLine(fb, fb->GetWidth()*0.1, fb->GetHeight()*0.1, fb->GetWidth()*0.9, fb->GetHeight()*0.9, Color(1, 0, 0));
             break;
+        case '[':
+            if(imagePlaneDistance-1 >= 1) {
+                imagePlaneDistance--;
+            }
+            render();
+            break;
+        case ']':
+            imagePlaneDistance++;
+            render();
+
+            break;
+        case '.':
+            imageplaneHalfSide++;
+            render();
+            break;
+        case ',':
+            if(imageplaneHalfSide -1 >= 1){
+                imageplaneHalfSide--;
+            }
+            render();
+            break;
+        case'r':
+            render();
+            break;
         default:
             break;
     }
