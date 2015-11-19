@@ -622,9 +622,9 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    //sceneReader("./spheres.rtl");
+    sceneReader("./spheres.rtl");
     //sceneReader("./transparent_sphere_and_teapot.rtl");
-	sceneReader("./red_sphere_and_teapot.rtl");
+	//sceneReader("./red_sphere_and_teapot.rtl");
 	render();
 
     // Switch to main loop
@@ -704,12 +704,32 @@ point *raySphereIntercept(Ray *r, Sphere *s) {
         float sPos = Dot(r->direction, *dP) + sqrt(discriminant);
         float sNeg = Dot(r->direction, *dP) - sqrt(discriminant);
         float s;
-        if (sPos < sNeg) {
-            s = sPos;
-        }
-        else {
-            s = sNeg;
-        }
+
+		if(sPos < 0 && sNeg < 0)
+		{
+			return ret;
+		}
+
+		if (sPos > 0 && sNeg > 0)
+		{
+			if (sPos < sNeg) {
+				s = sPos;
+			}
+			else {
+				s = sNeg;
+			}
+		}
+		else
+		{
+			if(sPos > 0)
+			{
+				s = sPos;
+			}
+			else
+			{
+				s = sNeg;
+			}
+		}
         ret = (point *) malloc(sizeof(point));
         ret->x = r->origin.x + s * r->direction.x;
         ret->y = r->origin.y + s * r->direction.y;
@@ -1099,7 +1119,7 @@ Color *localIllumination(point p, point norm, point view, Material mat) {
 
         //See if this light is causing shadows
         Ray tempR = Ray();
-        tempR.origin = p;
+        tempR.origin = p + (L * .1);
         tempR.direction = L;
 
         point * closestPoint = nullptr;
