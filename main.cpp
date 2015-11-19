@@ -500,8 +500,8 @@ void render()
 		for (int x = 0; x < fb->GetWidth(); x++)
 		{
 			//printf("Rendering pixel (%d, %d)\n", x, y);
-			float ypx = (y / (fb->GetHeight() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
-			float xpx = (x / (fb->GetWidth() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
+			float ypx = ((y+.5) / (fb->GetHeight() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
+			float xpx = ((x+.5) / (fb->GetWidth() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
 
 			Ray *r = (Ray *)malloc(sizeof(Ray));
 			
@@ -512,7 +512,7 @@ void render()
 			r->krg = 1.f;
 			r->ktg = 1.f;
 
-			Color c = rayTrace(r, 3);
+			Color c = rayTrace(r, 4);
 			fb->SetPixel(x, y, c);
 		}
 	}
@@ -772,7 +772,7 @@ point add(point p, point p2)
 
 point reflect(point incident, point normal) {
 	point norm = normalize(normal);
-    point inci = normalize(incident * -1);
+    point inci = normalize(incident);
 	//incident = incident * -1;
     return inci - norm * Dot(norm, inci) * 2.f;
 }
@@ -788,7 +788,7 @@ point refract(point incident, point normal, float indexI, float indexR, bool isE
 		norm = normal * -1;
 	}
 	norm = normalize(norm);
-	incident = normalize(incident);
+	incident = normalize(incident * -1);
 	float indexRatio = indexI / indexR;
 	float k = 1.0f - pow(indexRatio, 2) * (1.0f - pow(Dot(incident, normal), 2));
 	if(k < 0.0f)
@@ -1016,7 +1016,7 @@ point getTriNormal(point *p, Mesh *m, int i)
 	point comp2 = n2 * (a2 / A);
 	point comp3 = n3 * (a3 / A);
 
-	return add(comp3, add(comp1, comp2));
+	return (comp3 + comp1 + comp2) * -1;
 }
 
 
