@@ -114,6 +114,7 @@ Light *lights;
 typedef struct _Ray {
     point origin, direction;
 	bool isExternal;
+	float krg, ktg;
 } Ray;
 
 
@@ -508,6 +509,8 @@ void render()
 			point pxPoint = normalize(subtract(point(xpx, ypx, -imagePlaneDistance), origin));
 			r->direction = pxPoint;
 			r->isExternal = true;
+			r->krg = 1.f;
+			r->ktg = 1.f;
 
 			Color c = rayTrace(r, 3);
 			fb->SetPixel(x, y, c);
@@ -595,7 +598,8 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    //sceneReader("./redsphere.rtl");
+    //sceneReader("./spheres.rtl");
+    //sceneReader("./transparent_sphere_and_teapot.rtl");
 	sceneReader("./red_sphere_and_teapot.rtl");
 	render();
 
@@ -701,15 +705,15 @@ point *rayTriIntersection(Ray *r, point v1, point v2, point v3) {
     float t;
     point *ret = nullptr;
 
-    e1 = subtract(v2, v3);
-    e2 = subtract(v3, v1);
+    e1 = v2 - v1;
+    e2 = v3 - v1;
     P = cross(r->direction, e2);
     det = Dot(e1, P);
     if (det > -EPSILON && det < EPSILON) {
         return ret;
     }
     invDet = 1.f / det;
-    T = subtract(r->origin, v1);
+    T = r->origin - v1;
     u = Dot(T, P) * invDet;
 
     if (u < 0.f || u > 1.f) {
@@ -719,7 +723,7 @@ point *rayTriIntersection(Ray *r, point v1, point v2, point v3) {
     Q = cross(T, e1);
     v = Dot(r->direction, Q) * invDet;
 
-    if (v < 0.f || v > 1.f) {
+    if (v < 0.f || u + v > 1.f) {
         return ret;
     }
 
@@ -768,14 +772,14 @@ point add(point p, point p2)
 
 point reflect(point incident, point normal) {
 	point norm = normalize(normal);
-    // inci = normalize(incident * -1);
+    point inci = normalize(incident * -1);
 	//incident = incident * -1;
-    return incident - norm * Dot(norm, incident) * 2.f;
+    return inci - norm * Dot(norm, inci) * 2.f;
 }
 
-point refract(point incident, point normal, float indexI, float indexR, bool isInternal) {
+point refract(point incident, point normal, float indexI, float indexR, bool isExternal) {
 	point norm;
-	if(isInternal)
+	if(isExternal)
 	{
 		norm = normal;
 	}
@@ -943,6 +947,7 @@ Color rayTrace(Ray *r, int depth)
 	}
     point viewingVector = point(0, 0, 0) - *closestPoint;
 	Color c = *localIllumination(*closestPoint, *norm, viewingVector, *mat);
+	float vecCheck = Dot(*norm, viewingVector);
 
 
 	depth--;
@@ -957,14 +962,18 @@ Color rayTrace(Ray *r, int depth)
 			reflectRay->origin = *closestPoint;
 			reflectRay->direction = reflect(r->direction, *norm);
 			reflectRay->isExternal = true;
+			reflectRay->krg = r->krg * mat->k_relect;
+			reflectRay->ktg = r->ktg;
 			Color reflected = rayTrace(reflectRay, depth);
-			c = c + (reflected * mat->k_relect);
+			c = c + (reflected * reflectRay->krg);
 		}
 
 		if (mat->k_refract > 0.f)
 		{
 			Ray *refractRay = (Ray *)malloc(sizeof(Ray));
 			refractRay->origin = *closestPoint;
+			refractRay->krg = r->krg;
+			refractRay->ktg = r->ktg * mat->k_refract;
 			if (r->isExternal)
 			{
 				refractRay->direction = refract(r->direction, *norm, 1, mat->ref_index, true);
@@ -977,7 +986,7 @@ Color rayTrace(Ray *r, int depth)
 				refractRay->isExternal = true;
 			}
 			Color refracted = rayTrace(refractRay, depth);
-			c = c + (refracted * mat->k_refract);
+			c = c + (refracted * refractRay->ktg);
 		}
 	}
 
