@@ -500,8 +500,8 @@ void render()
 		for (int x = 0; x < fb->GetWidth(); x++)
 		{
 			//printf("Rendering pixel (%d, %d)\n", x, y);
-			float ypx = ((y+.5) / (fb->GetHeight() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
-			float xpx = ((x+.5) / (fb->GetWidth() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
+			float ypx = ((y) / (fb->GetHeight() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
+			float xpx = ((x) / (fb->GetWidth() / (2 * imageplaneHalfSide))) - imageplaneHalfSide;
 
 			Ray *r = (Ray *)malloc(sizeof(Ray));
 			
@@ -686,57 +686,34 @@ point cross(point p, point p2) {
 
 point *raySphereIntercept(Ray *r, Sphere *s) {
     point *ret = nullptr;
-    point *dP = (point *) malloc(sizeof(point));
-    dP->x = s->x - r->origin.x;
-    dP->y = s->y - r->origin.y;
-    dP->z = s->z - r->origin.z;
-    dP->w = 0;
+	float A, B, C;
 
-    float dotUdP = Dot(r->direction, *dP);
-    point directionProject = multiply(r->direction, dotUdP);
-    point diffdPDirectionProjection = subtract(*dP, directionProject);
-    float mag = magnitude(diffdPDirectionProjection);
-    float magsq = mag * mag;
+	A = pow(r->direction.x, 2) + pow(r->direction.y, 2) + pow(r->direction.z, 3);
+	B = 2 * (r->direction.x * (r->origin.x - s->x) + 
+		r->direction.y * (r->origin.y - s->y) +
+		r->direction.z * (r->origin.z - s->z));
+	C = pow((r->origin.x - s->x), 2) +
+		pow((r->origin.y - s->y), 2) +
+		pow((r->origin.z - s->z), 2) - pow(s->radius, 2);
 
-    float discriminant = (s->radius * s->radius) - magsq;
-
-    if (discriminant >= 0) {
-        float sPos = Dot(r->direction, *dP) + sqrt(discriminant);
-        float sNeg = Dot(r->direction, *dP) - sqrt(discriminant);
-        float s;
-
-		if(sPos < 0 && sNeg < 0)
+	float disc = pow(B, 2) - 4 * C;
+	if(disc >= 0)
+	{
+		float t0 = (-B - sqrt(disc)) / (2);
+		if(t0 > 0)
 		{
-			return ret;
-		}
-
-		if (sPos > 0 && sNeg > 0)
-		{
-			if (sPos < sNeg) {
-				s = sPos;
-			}
-			else {
-				s = sNeg;
-			}
+			ret = new point(r->origin.x + t0 * r->direction.x, r->origin.y + t0 * r->direction.y, r->origin.z + t0 * r->direction.z);
 		}
 		else
 		{
-			if(sPos > 0)
+			float t1 = (-B + sqrt(disc)) / (2 * A);
+			if(t1 < 0)
 			{
-				s = sPos;
+				return ret;
 			}
-			else
-			{
-				s = sNeg;
-			}
+			ret = new point(r->origin.x + t0 * r->direction.x, r->origin.y + t0 * r->direction.y, r->origin.z + t0 * r->direction.z);
 		}
-        ret = (point *) malloc(sizeof(point));
-        ret->x = r->origin.x + s * r->direction.x;
-        ret->y = r->origin.y + s * r->direction.y;
-        ret->z = r->origin.z + s * r->direction.z;
-        ret->w = 1;
-
-    }
+	}
 
     return ret;
 }
@@ -1129,7 +1106,7 @@ Color *localIllumination(point p, point norm, point view, Material mat) {
         raycast(&tempR,garbageMat,garbage,closestPoint);
 
 
-        if(closestPoint != nullptr){
+        if(false){
             //Your shadowed!
             continue;
         }
