@@ -1,3 +1,6 @@
+//We're having a sampling error with spheres that we aren't sure why we're getting
+//We've tried our sphere intersection code two different ways, but nothings really changing.
+
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef _WIN32
@@ -622,9 +625,9 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_LINE_SMOOTH);
 
-    sceneReader("./spheres.rtl");
+    //sceneReader("./spheres.rtl");
     //sceneReader("./transparent_sphere_and_teapot.rtl");
-	//sceneReader("./red_sphere_and_teapot.rtl");
+	sceneReader("./red_sphere_and_teapot.rtl");
 	render();
 
     // Switch to main loop
@@ -688,7 +691,7 @@ point *raySphereIntercept(Ray *r, Sphere *s) {
     point *ret = nullptr;
 	float A, B, C;
 
-	A = pow(r->direction.x, 2) + pow(r->direction.y, 2) + pow(r->direction.z, 3);
+	A = pow(r->direction.x, 2) + pow(r->direction.y, 2) + pow(r->direction.z, 2);
 	B = 2 * (r->direction.x * (r->origin.x - s->x) + 
 		r->direction.y * (r->origin.y - s->y) +
 		r->direction.z * (r->origin.z - s->z));
@@ -706,12 +709,12 @@ point *raySphereIntercept(Ray *r, Sphere *s) {
 		}
 		else
 		{
-			float t1 = (-B + sqrt(disc)) / (2 * A);
+			float t1 = (-B + sqrt(disc)) / (2);
 			if(t1 < 0)
 			{
 				return ret;
 			}
-			ret = new point(r->origin.x + t0 * r->direction.x, r->origin.y + t0 * r->direction.y, r->origin.z + t0 * r->direction.z);
+			ret = new point(r->origin.x + t1 * r->direction.x, r->origin.y + t1 * r->direction.y, r->origin.z + t1 * r->direction.z);
 		}
 	}
 
@@ -815,6 +818,7 @@ point refract(point incident, point normal, float indexI, float indexR, bool isE
 	if(k < 0.0f)
 	{
 		printf("K < 0");
+		return point(0, 0, 0);
 	}
 	return incident - norm * (Dot(norm * indexRatio, incident) - sqrt(k));
 
@@ -1106,7 +1110,7 @@ Color *localIllumination(point p, point norm, point view, Material mat) {
         raycast(&tempR,garbageMat,garbage,closestPoint);
 
 
-        if(false){
+        if(closestPoint != nullptr){
             //Your shadowed!
             continue;
         }
