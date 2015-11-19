@@ -153,6 +153,10 @@ void raycast(Ray* r, Material*& mat, point*& norm, point*& closestPoint);
 
 point subtract(point p, point p2);
 
+float max(float input, float max);
+
+float min(float input, float min);
+
 
 // The mesh reader itself
 // It can read *very* simple obj files
@@ -699,23 +703,29 @@ point *raySphereIntercept(Ray *r, Sphere *s) {
 		pow((r->origin.y - s->y), 2) +
 		pow((r->origin.z - s->z), 2) - pow(s->radius, 2);
 
-	float disc = pow(B, 2) - 4 * C;
+	float disc = pow(B, 2) - 4 * C * A;
+    float t0 = (-B - sqrt(disc)) / (2 * A);
+    float t1 = (-B + sqrt(disc)) / (2 * A);
 	if(disc >= 0)
 	{
-		float t0 = (-B - sqrt(disc)) / (2);
-		if(t0 > 0)
-		{
-			ret = new point(r->origin.x + t0 * r->direction.x, r->origin.y + t0 * r->direction.y, r->origin.z + t0 * r->direction.z);
-		}
-		else
-		{
-			float t1 = (-B + sqrt(disc)) / (2);
-			if(t1 < 0)
-			{
-				return ret;
-			}
-			ret = new point(r->origin.x + t1 * r->direction.x, r->origin.y + t1 * r->direction.y, r->origin.z + t1 * r->direction.z);
-		}
+		float tVal = min(t0,t1);
+        tVal = max(tVal,0);
+        if(tVal > 0){
+            ret = new point(r->origin.x + tVal * r->direction.x, r->origin.y + tVal * r->direction.y, r->origin.z + tVal * r->direction.z);
+        }
+//		if(t0 > 0)
+//		{
+//			ret = new point(r->origin.x + t0 * r->direction.x, r->origin.y + t0 * r->direction.y, r->origin.z + t0 * r->direction.z);
+//		}
+//		else
+//		{
+//
+//			if(t1 < 0)
+//			{
+//				return ret;
+//			}
+//			ret = new point(r->origin.x + t1 * r->direction.x, r->origin.y + t1 * r->direction.y, r->origin.z + t1 * r->direction.z);
+//		}
 	}
 
     return ret;
@@ -848,6 +858,12 @@ float max(float input, float max) {
     return max;
 }
 
+float min(float input, float max) {
+    if (input > max) {
+        return max;
+    }
+    return input;
+}
 
 point* rayMeshIntersection(Ray *r, Mesh *m, int *triOut)
 {
