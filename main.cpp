@@ -512,7 +512,7 @@ void render()
 			r->krg = 1.f;
 			r->ktg = 1.f;
 
-			Color c = rayTrace(r, 4);
+			Color c = rayTrace(r, 3);
 			fb->SetPixel(x, y, c);
 		}
 	}
@@ -772,9 +772,9 @@ point add(point p, point p2)
 
 point reflect(point incident, point normal) {
 	point norm = normalize(normal);
-    point inci = normalize(incident);
+    point inci = normalize(incident * -1);
 	//incident = incident * -1;
-    return inci - norm * Dot(norm, inci) * 2.f;
+    return norm * Dot(norm, inci) * 2.f - inci;
 }
 
 point refract(point incident, point normal, float indexI, float indexR, bool isExternal) {
@@ -790,12 +790,12 @@ point refract(point incident, point normal, float indexI, float indexR, bool isE
 	norm = normalize(norm);
 	incident = normalize(incident * -1);
 	float indexRatio = indexI / indexR;
-	float k = 1.0f - pow(indexRatio, 2) * (1.0f - pow(Dot(incident, normal), 2));
+	float k = 1.0f - pow(indexRatio, 2) + pow(Dot(incident, norm * indexRatio), 2);
 	if(k < 0.0f)
 	{
 		printf("K < 0");
 	}
-	return (incident * indexRatio) - normal * (indexRatio * Dot(norm, incident) + sqrt(k));
+	return incident - norm * (Dot(norm * indexRatio, incident) - sqrt(k));
 
 	/*float c1 = -Dot(norm, incident);
 	float c2 = sqrt(1 - pow(indexRatio, 2) * (1 - pow(c1, 2)));
